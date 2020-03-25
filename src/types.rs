@@ -22,7 +22,7 @@ impl Deps {
         unimplemented!();
     }
 
-    fn getStore(prefix: Type) -> Store {
+    fn getStore(prefix: String) -> Store {
         unimplemented!();
     }
 
