@@ -20,7 +20,7 @@ pub fn make_res_c_string(res: Response) -> *mut c_char {
 }
 
 pub fn make_err_c_string<T: Display>(error: T) -> *mut c_char {
-    let output = serde_json::to_vec(&ContractResult::Err(error.to_string())).unwrap()
+    let output = serde_json::to_vec(&ContractResult::Err(error.to_string())).unwrap();
     unsafe { CString::from_vec_unchecked(output) }.into_raw()
 }
 
