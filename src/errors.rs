@@ -21,6 +21,12 @@ pub enum Error {
         #[cfg(feature = "backtraces")]
         backtrace: snafu::Backtrace,
     },
+    #[snafu(display("Error serializing {}: {}", kind, source))]
+    SerializeErr {
+        kind: &'static str,
+        #[cfg(feature = "backtraces")]
+        backtrace: snafu::Backtrace,
+    },
     #[snafu(display("Invalid {}: {}", field, msg))]
     ValidationErr {
         field: &'static str,

@@ -1,27 +1,36 @@
 pub mod contract;
 pub mod types;
 pub mod errors;
-
+pub mod export;
 
 mod wasm {
     use super::contract;
+    use super::export;
 
     use std::ffi::{CStr, CString};
     use std::mem;
     use std::os::raw::{c_char, c_void};
 
 
-    pub extern fn init (subject: *mut c_char) -> *mut c_void {
-        let res = contract::init();
-        make_res_c_string(res)
+    pub extern fn init (subject: *mut c_char) -> *mut c_char {
+        match contract::init() {
+            Ok(res) => export::make_res_c_string(res),
+            Err(err) => export::make_err_c_string(err),
+        }
     }
 
-    pub extern fn handle(subject: *mut c_char) -> *mut c_void {
-        contract::handle()
+    pub extern fn handle(subject: *mut c_char) -> *mut c_char {
+        match contract::handle() {
+            Ok(res) => export::make_res_c_string(res),
+            Err(err) => export::make_err_c_string(err),
+        }
     }
 
-    pub extern fn query(subject: *mut c_char) -> *mut c_void {
-        contract::query()
+    pub extern fn query(subject: *mut c_char) -> *mut c_char {
+        match contract::query() {
+            Ok(res) => export::make_res_c_string(res),
+            Err(err) => export::make_err_c_string(err),
+        }
     }
 
     #[no_mangle]
