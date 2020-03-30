@@ -1,19 +1,53 @@
 pub mod contract;
 pub mod types;
+pub mod errors;
+
 
 mod wasm {
-    use std::ffi::c_void;
     use super::contract;
 
-    pub extern "C" fn init (params_ptr: *mut c_void) -> *mut c_void {
-        contract::init()
+    use std::ffi::{CStr, CString};
+    use std::mem;
+    use std::os::raw::{c_char, c_void};
+
+
+    pub extern fn init (subject: *mut c_char) -> *mut c_void {
+        let res = contract::init();
+        make_res_c_string(res)
     }
 
-    pub extern "C" fn handle(params_ptr: *mut c_void) -> *mut c_void {
+    pub extern fn handle(subject: *mut c_char) -> *mut c_void {
         contract::handle()
     }
 
-    pub extern "C" fn query(params_ptr: *mut c_void) -> *mut c_void {
+    pub extern fn query(subject: *mut c_char) -> *mut c_void {
         contract::query()
     }
+
+    #[no_mangle]
+    pub extern fn allocate(size: usize) -> *mut c_void {
+        let mut buffer = Vec::with_capacity(size);
+        let pointer = buffer.as_mut_ptr();
+        mem::forget(buffer);
+        pointer as *mut c_void
+    }
+
+    #[no_mangle]
+    pub extern fn deallocate(pointer: *mut c_void, capacity: usize) {
+        unsafe {
+            let _ = Vec::from_raw_parts(pointer, 0, capacity);
+        }
+    }
+
+    #[no_mangle]
+    pub extern fn greet(subject: *mut c_char) -> *mut c_char {
+        let subject = unsafe { CStr::from_ptr(subject).to_bytes().to_vec() };
+        let mut output = b"Hello, ".to_vec();
+        output.extend(&subject);
+        output.extend(&[b'!']);
+
+        unsafe { CString::from_vec_unchecked(output) }.into_raw()
+    }
+
+
 }
