@@ -96,54 +96,14 @@ type middle struct {
 var middleIns = middle{fun: make(map[string]func(...interface{}) (wasm.Value, error))}
 
 func GetBytes() []byte {
-	modulePath := "/home/thomas/code/repo_77af9c18e026464fb8aad1444645db73/target/wasm32-unknown-unknown/debug/rust_sdk.wasm"
+	modulePath := "../../target/wasm32-unknown-unknown/debug/rust_sdk.wasm"
 
-	bytes, _ := wasm.ReadBytes(modulePath)
-
-	return bytes
-}
-
-func exportedFunctions() {
-	// Instantiates a WebAssembly instance from bytes.
-	instance, _ := wasm.NewInstance(GetBytes())
-	defer instance.Close()
-
-	for k, _ := range instance.Exports {
-		fmt.Println(k)
+	res, err := wasm.ReadBytes(modulePath)
+	if err != nil {
+		panic(err)
 	}
 
-	// Gets an exported function.
-	init, functionExists := instance.Exports["init"]
-
-	fmt.Println(functionExists)
-	if !functionExists {
-		return
-	}
-
-	// Calls the `sum` exported function with Go values.
-	result, _ := init(1)
-
-	fmt.Println(result)
-
-	var bytes []byte
-	data := instance.Memory.Data()[result.ToI32():]
-	for i := range data {
-		if data[i] == 0 {
-			break
-		}
-		bytes = append(bytes, data[i])
-	}
-	fmt.Println(string(bytes))
-
-	//result, _ = init(wasm.I32(3))
-	//
-	//// Calls the `sum` exported function with WebAssembly values.
-	//fmt.Println(result)
-
-	// Output:
-	// true
-	// 3
-	// 7
+	return res
 }
 
 func dbFunc() {
@@ -203,36 +163,4 @@ func dbFunc() {
 
 func main() {
 	dbFunc()
-}
-
-func importedFunc() {
-	imports, err := wasm.NewImports().Namespace("env").Append("println_str", println_str, C.println_str)
-	if err != nil {
-		panic(err)
-	}
-
-	module, err := wasm.Compile(GetBytes())
-	if err != nil {
-		panic(err)
-	}
-	defer module.Close()
-
-	instance, err := module.InstantiateWithImports(imports)
-	if err != nil {
-		panic(err)
-	}
-	defer instance.Close()
-
-	convert, exist := instance.Exports["convert"]
-	if !exist {
-		fmt.Println(exist)
-		return
-	}
-
-	result, err := convert(30)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(result)
 }
