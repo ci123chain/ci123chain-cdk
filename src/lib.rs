@@ -6,29 +6,29 @@ pub mod export;
 pub mod wasm {
     use super::contract;
     use super::export;
+    use super::types;
 
-    use std::mem;
     use std::os::raw::{c_char, c_void};
 
     #[no_mangle]
-    pub extern fn init (subject: *mut c_char) -> *mut c_char {
-        match contract::init() {
+    pub extern fn init (msg: *mut c_char) -> *mut c_char {
+        match contract::init(msg) {
             Ok(res) => export::make_res_c_string(res),
             Err(err) => export::make_err_c_string(err),
         }
     }
 
     #[no_mangle]
-    pub extern fn handle(subject: *mut c_char) -> *mut c_char {
-        match contract::handle() {
+    pub extern fn handle(msg: *mut c_char) -> *mut c_char {
+        match contract::handle(msg) {
             Ok(res) => export::make_res_c_string(res),
             Err(err) => export::make_err_c_string(err),
         }
     }
 
     #[no_mangle]
-    pub extern fn query(subject: *mut c_char) -> *mut c_char {
-        match contract::query() {
+    pub extern fn query(msg: *mut c_char) -> *mut c_char {
+        match contract::query(msg) {
             Ok(res) => export::make_res_c_string(res),
             Err(err) => export::make_err_c_string(err),
         }
@@ -36,17 +36,12 @@ pub mod wasm {
 
     #[no_mangle]
     pub extern fn allocate(size: usize) -> *mut c_void {
-        let mut buffer = Vec::with_capacity(size);
-        let pointer = buffer.as_mut_ptr();
-        mem::forget(buffer);
-        pointer as *mut c_void
+        types::allocate(size)
     }
 
     #[no_mangle]
     pub extern fn deallocate(pointer: *mut c_void, capacity: usize) {
-        unsafe {
-            let _ = Vec::from_raw_parts(pointer, 0, capacity);
-        }
+        types::deallocate(pointer, capacity)
     }
 
 }

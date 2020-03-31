@@ -34,6 +34,8 @@ pub enum Error {
         #[cfg(feature = "backtraces")]
         backtrace: snafu::Backtrace,
     },
+    #[snafu(display("Received null pointer, refuse to use"))]
+    NullPointer { backtrace: snafu::Backtrace },
 }
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
