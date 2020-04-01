@@ -7,12 +7,35 @@ use std::mem;
 static MAX_READ: usize = 2000;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+pub struct LogAttribute {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
 pub struct Response {
     // let's make the positive case a struct, it contrains Msg: {...}, but also Data, Log, maybe later Events, etc.
-    // pub messages: Vec<CosmosMsg>,
-    // pub log: Vec<LogAttribute>, // abci defines this as string
-    // pub data: Option<Binary>,   // abci defines this as bytes
-    pub data: String,
+    pub messages: Vec<Message>,
+    pub log: Vec<LogAttribute>, // abci defines this as string
+    pub data: Vec<u8>,   // abci defines this as bytes
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Message {
+    // this moves tokens in the underlying sdk
+    Send {
+        from_address: Addr,
+        to_address: Addr,
+        amount: Vec<Coin>,
+    },
+    // this dispatches a call to another contract at a known address (with known ABI)
+    // msg is the json-encoded HandleMsg struct
+    Contract {
+        contract_addr: Addr,
+        msg: Vec<u8>,
+        send: Option<Vec<Coin>>,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
