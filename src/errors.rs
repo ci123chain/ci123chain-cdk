@@ -5,37 +5,45 @@ use snafu::Snafu;
 pub enum Error {
     #[snafu(display("Contract error: {}", msg))]
     ContractErr {
-        msg: &'static str,
+        msg: String,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
     #[snafu(display("{} not found", kind))]
     NotFound {
-        kind: &'static str,
+        kind: String,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
     #[snafu(display("Error parsing {}", kind))]
     ParseErr {
-        kind: &'static str,
+        kind: String,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
     #[snafu(display("Error serializing {}", kind))]
     SerializeErr {
-        kind: &'static str,
+        kind: String,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
     #[snafu(display("Invalid {}: {}", field, msg))]
     ValidationErr {
-        field: &'static str,
-        msg: &'static str,
+        field: String,
+        msg: String,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
     #[snafu(display("Received null pointer, refuse to use"))]
     NullPointer {},
+}
+
+impl From<serde_json::Error> for Error {
+    fn from(err: serde_json::Error) -> Error {
+        Error::ParseErr {
+            kind: err.to_string(),
+        }
+    }
 }
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;

@@ -1,7 +1,7 @@
-use serde::{Deserialize, Serialize};
-use std::os::raw::c_void;
 use crate::errors::{Error, NullPointer};
+use serde::{Deserialize, Serialize};
 use std::mem;
+use std::os::raw::c_void;
 
 // This is the buffer we pre-allocate in get
 static MAX_READ: usize = 2000;
@@ -17,7 +17,7 @@ pub struct Response {
     // let's make the positive case a struct, it contrains Msg: {...}, but also Data, Log, maybe later Events, etc.
     pub messages: Vec<Message>,
     pub log: Vec<LogAttribute>, // abci defines this as string
-    pub data: Vec<u8>,   // abci defines this as bytes
+    pub data: Vec<u8>,          // abci defines this as bytes
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -151,6 +151,23 @@ pub struct Coin {
 //     }
 // }
 
+pub struct Extern<S: Storage, A: Api> {
+    pub storage: S,
+    pub api: A,
+}
+
+pub trait Api {}
+
+pub struct ExternalApi {}
+
+impl ExternalApi {
+    pub fn new() -> ExternalApi {
+        ExternalApi {}
+    }
+}
+
+impl Api for ExternalApi {}
+
 pub trait Storage {
     fn set(&mut self, key: &[u8], value: &[u8]);
     fn get(&self, key: &[u8]) -> Option<Vec<u8>>;
@@ -162,10 +179,18 @@ pub struct Store {
     pub prefix: String,
 }
 
+impl Store {
+    pub fn new() -> Store {
+        Store {
+            prefix: "test-".to_string(),
+        }
+    }
+}
+
 impl Storage for Store {
     fn set(&mut self, key: &[u8], value: &[u8]) {
         let mut prefix = self.prefix.clone();
-        let real_key = unsafe{ prefix.as_mut_vec() };
+        let real_key = unsafe { prefix.as_mut_vec() };
         for &ele in key {
             real_key.push(ele);
         }
@@ -180,7 +205,7 @@ impl Storage for Store {
 
     fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
         let mut prefix = self.prefix.clone();
-        let real_key = unsafe{ prefix.as_mut_vec() };
+        let real_key = unsafe { prefix.as_mut_vec() };
         for &ele in key {
             real_key.push(ele);
         }
@@ -209,7 +234,7 @@ impl Storage for Store {
 
     fn delete(&self, key: &[u8]) {
         let mut prefix = self.prefix.clone();
-        let real_key = unsafe{ prefix.as_mut_vec() };
+        let real_key = unsafe { prefix.as_mut_vec() };
         for &ele in key {
             real_key.push(ele);
         }

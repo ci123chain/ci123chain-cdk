@@ -12,10 +12,10 @@ pub mod wasm {
 
     #[no_mangle]
     pub extern fn init (msg: *mut c_char) -> *mut c_char {
-        match contract::init(msg) {
-            Ok(res) => export::make_res_c_string(res),
-            Err(err) => export::make_err_c_string(err),
-        }
+        export::do_init(
+            &contract::init::<types::Store, types::ExternalApi>,
+            msg,
+        )
     }
 
     #[no_mangle]

@@ -3,7 +3,7 @@ use super::types::Response;
 use serde::{Deserialize, Serialize};
 
 use crate::types;
-use crate::types::Storage;
+use crate::types::{Storage, Api, Extern};
 
 use std::ffi::CStr;
 use std::os::raw::c_char;
@@ -26,23 +26,20 @@ pub enum HandleMsg {
     Reset { count: i32 },
 }
 
-pub fn init(msg_ptr: *mut c_char) -> Result<Response, Error> {
-    let mut store = test_db();
-    let c_str = unsafe { CStr::from_ptr(msg_ptr) };
-    {
-        let msg = c_str.to_str().unwrap();
-        let init_msg: InitMsg = serde_json::from_slice(msg.as_bytes()).unwrap();
-        // let init_msg = InitMsg{count: 5};
-        store.set("count".as_bytes(), init_msg.count.to_string().as_bytes());
-    }
+pub fn init<S: Storage, A: Api>(
+    deps: &mut Extern<S, A>,
+    msg: InitMsg,
+) -> Result<Response, Error> {
+    deps.storage.set("count".as_bytes(), msg.count.to_string().as_bytes());
     Ok(Response {
         messages: vec![],
         log: vec![],
-        data: c_str.to_str().unwrap()
-            .as_bytes()
-            .iter()
-            .map(|&u| u as u8)
-            .collect::<Vec<u8>>(),
+        data: serde_json::to_vec(&msg).unwrap(),
+        // data: msg.to_str().unwrap()
+        //     .as_bytes()
+        //     .iter()
+        //     .map(|&u| u as u8)
+        //     .collect::<Vec<u8>>(),
     })
 }
 
@@ -71,7 +68,7 @@ pub fn handle(msg_ptr: *mut c_char) -> Result<Response> {
                         });
                     }
                     None => {
-                        return Err(Error::NotFound { kind: "db error" });
+                        return Err(Error::NotFound { kind: "db error".to_string() });
                     }
                 }
             }
@@ -91,7 +88,7 @@ pub fn handle(msg_ptr: *mut c_char) -> Result<Response> {
     })
 }
 
-pub fn query(msg_ptr: *mut c_char) -> Result<Response> {
+pub fn query(_: *mut c_char) -> Result<Response> {
     Ok(Response {
         messages: vec![],
         log: vec![],
