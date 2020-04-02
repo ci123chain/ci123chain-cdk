@@ -84,6 +84,9 @@ func dbTest() {
 		type InitMsg struct {
 			Count int32 `json:"count"`
 		}
+		type HandleMsgInc struct{}
+		type HandleMsgReset struct {
+		}
 		msg := InitMsg{Count: 3}
 		data, err := json.Marshal(&msg)
 		if err != nil {
@@ -108,6 +111,9 @@ func dbTest() {
 			bytes = append(bytes, data[i])
 		}
 		fmt.Println(string(bytes))
+
+		//write key [testcount], value [3]
+		//{"ok":{"messages":[],"log":[],"data":[123,34,99,111,117,110,116,34,58,51,125]}}
 	}
 }
 
