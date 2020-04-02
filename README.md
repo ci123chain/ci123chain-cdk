@@ -6,7 +6,7 @@
 
 # 编译
 
-wasm-gc用于减小wasm体积，不一定要执行。当前目录下：
+wasm-gc用于减小wasm体积，不一定要执行。现有的/bin/wasm-gc是linux的，mac可以从 [https://github.com/alexcrichton/wasm-gc/releases](https://github.com/alexcrichton/wasm-gc/releases) 下载。当前目录下：
 
 ```shell
 $ cargo build --target wasm32-unknown-unknown
