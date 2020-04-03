@@ -1,11 +1,11 @@
 use crate::errors::Error;
-use crate::types::{consume_region, ContractResult, Extern, ExternalApi, Response, Store};
+use crate::types::{ContractResult, Extern, ExternalApi, Response, Store};
 use serde::de;
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::ffi::{CStr, CString};
 use std::fmt::Display;
-use std::os::raw::{c_char, c_void};
+use std::os::raw::c_char;
 
 #[derive(Serialize, Deserialize)]
 struct Params {
@@ -25,7 +25,7 @@ pub fn do_init<T: de::DeserializeOwned>(
 
 pub fn do_handle<T: de::DeserializeOwned>(
     handle_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
-    msg_ptr: *mut c_void,
+    msg_ptr: *mut c_char,
 ) -> *mut c_char {
     match _do_handle(handle_fn, msg_ptr) {
         Ok(res) => make_res_c_string(res),
@@ -35,7 +35,7 @@ pub fn do_handle<T: de::DeserializeOwned>(
 
 pub fn do_query<T: de::DeserializeOwned>(
     query_fn: &dyn Fn(&Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
-    msg_ptr: *mut c_void,
+    msg_ptr: *mut c_char,
 ) -> *mut c_char {
     match _do_query(query_fn, msg_ptr) {
         Ok(res) => make_res_c_string(res),
@@ -62,9 +62,16 @@ fn _do_init<T: de::DeserializeOwned>(
 
 fn _do_handle<T: de::DeserializeOwned>(
     handle_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
-    msg_ptr: *mut c_void,
+    msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
-    let msg: Vec<u8> = unsafe { consume_region(msg_ptr)? };
+    let c_str = unsafe { CStr::from_ptr(msg_ptr) };
+    let msg: Vec<u8> = c_str
+        .to_str()
+        .unwrap()
+        .as_bytes()
+        .iter()
+        .map(|&u| u as u8)
+        .collect::<Vec<u8>>();
     let msg: T = serde_json::from_slice(&msg)?;
     let mut deps = make_dependencies();
     handle_fn(&mut deps, msg)
@@ -72,9 +79,16 @@ fn _do_handle<T: de::DeserializeOwned>(
 
 fn _do_query<T: de::DeserializeOwned>(
     query_fn: &dyn Fn(&Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
-    msg_ptr: *mut c_void,
+    msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
-    let msg: Vec<u8> = unsafe { consume_region(msg_ptr)? };
+    let c_str = unsafe { CStr::from_ptr(msg_ptr) };
+    let msg: Vec<u8> = c_str
+        .to_str()
+        .unwrap()
+        .as_bytes()
+        .iter()
+        .map(|&u| u as u8)
+        .collect::<Vec<u8>>();
     let msg: T = serde_json::from_slice(&msg)?;
     let deps = make_dependencies();
     query_fn(&deps, msg)

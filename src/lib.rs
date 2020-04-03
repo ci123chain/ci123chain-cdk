@@ -1,7 +1,7 @@
 pub mod contract;
-pub mod types;
 pub mod errors;
 pub mod export;
+pub mod types;
 
 pub mod wasm {
     use super::contract;
@@ -11,37 +11,27 @@ pub mod wasm {
     use std::os::raw::{c_char, c_void};
 
     #[no_mangle]
-    pub extern fn init (msg: *mut c_char) -> *mut c_char {
-        export::do_init(
-            &contract::init::<types::Store, types::ExternalApi>,
-            msg,
-        )
+    pub extern "C" fn init(msg: *mut c_char) -> *mut c_char {
+        export::do_init(&contract::init::<types::Store, types::ExternalApi>, msg)
     }
 
     #[no_mangle]
-    pub extern fn handle(msg: *mut c_char) -> *mut c_char {
-        match contract::handle(msg) {
-            Ok(res) => export::make_res_c_string(res),
-            Err(err) => export::make_err_c_string(err),
-        }
+    pub extern "C" fn handle(msg: *mut c_char) -> *mut c_char {
+        export::do_handle(&contract::handle::<types::Store, types::ExternalApi>, msg)
     }
 
     #[no_mangle]
-    pub extern fn query(msg: *mut c_char) -> *mut c_char {
-        match contract::query(msg) {
-            Ok(res) => export::make_res_c_string(res),
-            Err(err) => export::make_err_c_string(err),
-        }
+    pub extern "C" fn query(msg: *mut c_char) -> *mut c_char {
+        export::do_query(&contract::query::<types::Store, types::ExternalApi>, msg)
     }
 
     #[no_mangle]
-    pub extern fn allocate(size: usize) -> *mut c_void {
+    pub extern "C" fn allocate(size: usize) -> *mut c_void {
         types::allocate(size)
     }
 
     #[no_mangle]
-    pub extern fn deallocate(pointer: *mut c_void, capacity: usize) {
+    pub extern "C" fn deallocate(pointer: *mut c_void, capacity: usize) {
         types::deallocate(pointer, capacity)
     }
-
 }

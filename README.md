@@ -13,7 +13,7 @@ $ cargo build --target wasm32-unknown-unknown
 $ ./bin/wasm-gc ./target/wasm32-unknown-unknown/debug/rust_sdk.wasm
 $ cd ./test/go
 $ go build -o main && ./main
-write key [testcount], value [3]
+write key [test-count], value [3]
 {"ok":{"messages":[],"log":[],"data":[123,34,99,111,117,110,116,34,58,51,125]}}
 ```
 
