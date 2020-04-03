@@ -1,6 +1,5 @@
 use crate::errors::Error;
-use crate::types::{ContractResult, Extern, ExternalApi, Response, Store};
-use serde::de;
+use crate::types::{ContractResult, Extern, ExternalApi, Param, Response, Store};
 use serde::{Deserialize, Serialize};
 use serde_json;
 use std::ffi::{CStr, CString};
@@ -13,8 +12,12 @@ struct Params {
     method: String,
 }
 
-pub fn do_init<T: de::DeserializeOwned>(
-    init_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+pub fn do_init(
+    init_fn: &dyn Fn(
+        &mut Extern<Store, ExternalApi>,
+        String,
+        Vec<String>,
+    ) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> *mut c_char {
     match _do_init(init_fn, msg_ptr) {
@@ -23,8 +26,12 @@ pub fn do_init<T: de::DeserializeOwned>(
     }
 }
 
-pub fn do_handle<T: de::DeserializeOwned>(
-    handle_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+pub fn do_handle(
+    handle_fn: &dyn Fn(
+        &mut Extern<Store, ExternalApi>,
+        String,
+        Vec<String>,
+    ) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> *mut c_char {
     match _do_handle(handle_fn, msg_ptr) {
@@ -33,8 +40,8 @@ pub fn do_handle<T: de::DeserializeOwned>(
     }
 }
 
-pub fn do_query<T: de::DeserializeOwned>(
-    query_fn: &dyn Fn(&Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+pub fn do_query(
+    query_fn: &dyn Fn(&Extern<Store, ExternalApi>, String, Vec<String>) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> *mut c_char {
     match _do_query(query_fn, msg_ptr) {
@@ -43,37 +50,45 @@ pub fn do_query<T: de::DeserializeOwned>(
     }
 }
 
-fn _do_init<T: de::DeserializeOwned>(
-    init_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+fn _do_init(
+    init_fn: &dyn Fn(
+        &mut Extern<Store, ExternalApi>,
+        String,
+        Vec<String>,
+    ) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
     let msg = c_str.to_str().unwrap().as_bytes();
-    let msg: T = serde_json::from_slice(&msg)?;
+    let msg: Param = serde_json::from_slice(&msg)?;
     let mut deps = make_dependencies();
-    init_fn(&mut deps, msg)
+    init_fn(&mut deps, msg.method, msg.args)
 }
 
-fn _do_handle<T: de::DeserializeOwned>(
-    handle_fn: &dyn Fn(&mut Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+fn _do_handle(
+    handle_fn: &dyn Fn(
+        &mut Extern<Store, ExternalApi>,
+        String,
+        Vec<String>,
+    ) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
     let msg = c_str.to_str().unwrap().as_bytes();
-    let msg: T = serde_json::from_slice(&msg)?;
+    let msg: Param = serde_json::from_slice(&msg)?;
     let mut deps = make_dependencies();
-    handle_fn(&mut deps, msg)
+    handle_fn(&mut deps, msg.method, msg.args)
 }
 
-fn _do_query<T: de::DeserializeOwned>(
-    query_fn: &dyn Fn(&Extern<Store, ExternalApi>, T) -> Result<Response, Error>,
+fn _do_query(
+    query_fn: &dyn Fn(&Extern<Store, ExternalApi>, String, Vec<String>) -> Result<Response, Error>,
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
     let msg = c_str.to_str().unwrap().as_bytes();
-    let msg: T = serde_json::from_slice(&msg)?;
+    let msg: Param = serde_json::from_slice(&msg)?;
     let deps = make_dependencies();
-    query_fn(&deps, msg)
+    query_fn(&deps, msg.method, msg.args)
 }
 
 pub fn make_res_c_string(res: Response) -> *mut c_char {

@@ -7,6 +7,12 @@ use std::os::raw::c_void;
 static MAX_READ: usize = 2000;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+pub struct Param {
+    pub method: String,
+    pub args: Vec<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
 pub struct LogAttribute {
     pub key: String,
     pub value: String,

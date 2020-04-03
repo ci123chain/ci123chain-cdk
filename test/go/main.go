@@ -53,8 +53,8 @@ func countContract() {
 		panic(err)
 	}
 
-	imports.Namespace("env").Append("write_db", write_db, C.write_db)
-	imports.Namespace("env").Append("delete_db", delete_db, C.delete_db)
+	_, _ = imports.Namespace("env").Append("write_db", write_db, C.write_db)
+	_, _ = imports.Namespace("env").Append("delete_db", delete_db, C.delete_db)
 
 	module, err := wasm.Compile(GetBytes())
 	if err != nil {
@@ -93,66 +93,69 @@ func countContract() {
 		return
 	}
 
+	type Param struct {
+		Method string   `json:"method"`
+		Args   []string `json:"args"`
+	}
+
 	//调用
 	{
-		// rust 类型比较复杂, json 参考 https://serde.rs/json.html
-		type InitMsg struct {
-			Count int32 `json:"count"`
+		res, err := wasmCall(instance, init, &Param{
+			Method: "init",
+			Args:   []string{"3"},
+		})
+		if err != nil {
+			panic(err)
 		}
-		type ResetMsg struct {
-			Count int32 `json:"count"`
-		}
-		type HandleMsgReset struct {
-			Reset ResetMsg `json:"reset"`
-		}
-		incrementMsg := `{"increment":{}}`
-		queryMsg := "null"
-
-		{
-			res, err := wasmCall(instance, init, &InitMsg{Count: 3})
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(res)
-		}
-
-		{
-			res, err := wasmCall(instance, handle, incrementMsg)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(res)
-		}
-
-		{
-			res, err := wasmCall(instance, handle, &HandleMsgReset{Reset: ResetMsg{Count: 10}})
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(res)
-		}
-
-		{
-			res, err := wasmCall(instance, query, queryMsg)
-			if err != nil {
-				panic(err)
-			}
-			fmt.Println(res)
-		}
-
-		//{"count":3}
-		//write key [test-count], value [3]
-		//{"ok":{"messages":[],"log":[],"data":[123,34,99,111,117,110,116,34,58,51,125]}}
-		//{"increment":{}}
-		//read key [test-count]
-		//write key [test-count], value [4]
-		//{"ok":{"messages":[],"log":[],"data":[51]}}
-		//{"reset":{"count":10}}
-		//write key [test-count], value [10]
-		//{"ok":{"messages":[],"log":[],"data":[123,34,114,101,115,101,116,34,58,123,34,99,111,117,110,116,34,58,49,48,125,125]}}
-		//null
-		//{"ok":{"messages":[],"log":[],"data":[114,101,115,117,108,116,32,102,114,111,109,32,113,117,101,114,121]}}
+		fmt.Println(res)
 	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "inc",
+			Args:   []string{},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(res)
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "reset",
+			Args:   []string{"10"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(res)
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "init",
+			Args:   []string{},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(res)
+	}
+
+	//{"method":"init","args":["3"]}
+	//write key [test-count], value [3]
+	//{"ok":{"messages":[],"log":[],"data":[91,34,51,34,44,34,105,110,105,116,34,93]}}
+	//{"method":"inc","args":[]}
+	//read key [test-count]
+	//write key [test-count], value [4]
+	//{"ok":{"messages":[],"log":[],"data":[51]}}
+	//{"method":"reset","args":["10"]}
+	//write key [test-count], value [10]
+	//{"ok":{"messages":[],"log":[],"data":[91,34,49,48,34,44,34,114,101,115,101,116,34,93]}}
+	//{"method":"init","args":[]}
+	//{"ok":{"messages":[],"log":[],"data":[91,34,105,110,105,116,34,44,34,113,117,101,114,121,34,93]}}
+
 }
 
 func readCString(memory []byte) string {
