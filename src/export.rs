@@ -48,13 +48,7 @@ fn _do_init<T: de::DeserializeOwned>(
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
-    let msg: Vec<u8> = c_str
-        .to_str()
-        .unwrap()
-        .as_bytes()
-        .iter()
-        .map(|&u| u as u8)
-        .collect::<Vec<u8>>();
+    let msg = c_str.to_str().unwrap().as_bytes();
     let msg: T = serde_json::from_slice(&msg)?;
     let mut deps = make_dependencies();
     init_fn(&mut deps, msg)
@@ -65,13 +59,7 @@ fn _do_handle<T: de::DeserializeOwned>(
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
-    let msg: Vec<u8> = c_str
-        .to_str()
-        .unwrap()
-        .as_bytes()
-        .iter()
-        .map(|&u| u as u8)
-        .collect::<Vec<u8>>();
+    let msg = c_str.to_str().unwrap().as_bytes();
     let msg: T = serde_json::from_slice(&msg)?;
     let mut deps = make_dependencies();
     handle_fn(&mut deps, msg)
@@ -82,13 +70,7 @@ fn _do_query<T: de::DeserializeOwned>(
     msg_ptr: *mut c_char,
 ) -> Result<Response, Error> {
     let c_str = unsafe { CStr::from_ptr(msg_ptr) };
-    let msg: Vec<u8> = c_str
-        .to_str()
-        .unwrap()
-        .as_bytes()
-        .iter()
-        .map(|&u| u as u8)
-        .collect::<Vec<u8>>();
+    let msg = c_str.to_str().unwrap().as_bytes();
     let msg: T = serde_json::from_slice(&msg)?;
     let deps = make_dependencies();
     query_fn(&deps, msg)

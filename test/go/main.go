@@ -87,11 +87,11 @@ func countContract() {
 		return
 	}
 
-	//query, exist := instance.Exports["query"]
-	//if !exist {
-	//	fmt.Println("query not found")
-	//	return
-	//}
+	query, exist := instance.Exports["query"]
+	if !exist {
+		fmt.Println("query not found")
+		return
+	}
 
 	//调用
 	{
@@ -105,8 +105,8 @@ func countContract() {
 		type HandleMsgReset struct {
 			Reset ResetMsg `json:"reset"`
 		}
-		incrementMsg := "increment"
-		//queryMsg := "null"
+		incrementMsg := `{"increment":{}}`
+		queryMsg := "null"
 
 		{
 			res, err := wasmCall(instance, init, &InitMsg{Count: 3})
@@ -132,16 +132,26 @@ func countContract() {
 			fmt.Println(res)
 		}
 
-		//{
-		//	res, err := wasmCall(instance, query, queryMsg)
-		//	if err != nil {
-		//		panic(err)
-		//	}
-		//	fmt.Println(res)
-		//}
+		{
+			res, err := wasmCall(instance, query, queryMsg)
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(res)
+		}
 
+		//{"count":3}
 		//write key [test-count], value [3]
 		//{"ok":{"messages":[],"log":[],"data":[123,34,99,111,117,110,116,34,58,51,125]}}
+		//{"increment":{}}
+		//read key [test-count]
+		//write key [test-count], value [4]
+		//{"ok":{"messages":[],"log":[],"data":[51]}}
+		//{"reset":{"count":10}}
+		//write key [test-count], value [10]
+		//{"ok":{"messages":[],"log":[],"data":[123,34,114,101,115,101,116,34,58,123,34,99,111,117,110,116,34,58,49,48,125,125]}}
+		//null
+		//{"ok":{"messages":[],"log":[],"data":[114,101,115,117,108,116,32,102,114,111,109,32,113,117,101,114,121]}}
 	}
 }
 
@@ -162,11 +172,20 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 		panic("allocate not found")
 	}
 
-	data, err := json.Marshal(msg)
-	if err != nil {
-		return "", err
+	var data []byte
+	switch msg.(type) {
+	case string:
+		data = []byte(msg.(string))
+	default:
+		res, err := json.Marshal(msg)
+		if err != nil {
+			return "", err
+		}
+		data = res
 	}
 	fmt.Println(string(data))
+	data = append(data, 0) // c str, + \0
+
 	offset, err := allocate(len(data))
 	if err != nil {
 		return "", err
