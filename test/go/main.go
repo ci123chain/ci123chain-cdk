@@ -9,8 +9,9 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 	"unsafe"
+
+	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
 //export read_db
@@ -45,6 +46,56 @@ func GetBytes() []byte {
 
 	return res
 }
+
+type ContractParam struct {
+	Method string   `json:"method"`
+	Args   []string `json:"args"`
+}
+
+type Result struct {
+	_map  map[string]interface{}
+	_data interface{}
+}
+
+func (result *Result) Ok() bool {
+	if data, exist := result._map["ok"]; exist {
+		result._data = data
+		return true
+	}
+	return false
+}
+
+func (result *Result) Err() bool {
+	if data, exist := result._map["err"]; exist {
+		result._data = data
+		return true
+	}
+	return false
+}
+
+// called after Ok()
+func (result *Result) Parse() Response {
+	var response Response
+	b, _ := json.Marshal(result._data)
+	_ = json.Unmarshal(b, &response)
+	return response
+}
+
+// called after Err()
+func (result *Result) ParseError() string {
+	return result._data.(string)
+}
+
+type Response struct {
+	//Message []map[string]interface{} `json:"message"`
+	//Log     []LogAttribute           `json:"log"`
+	Data []byte `json:"data"`
+}
+
+//type LogAttribute struct {
+//	Key   string `json:"key"`
+//	Value string `json:"value"`
+//}
 
 func countContract() {
 	//环境准备
@@ -93,68 +144,79 @@ func countContract() {
 		return
 	}
 
-	type Param struct {
-		Method string   `json:"method"`
-		Args   []string `json:"args"`
-	}
-
 	//调用
 	{
-		res, err := wasmCall(instance, init, &Param{
+		res, err := wasmCall(instance, init, &ContractParam{
 			Method: "init",
 			Args:   []string{"3"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		if res.Ok() {
+			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
+		} else if res.Err() {
+			fmt.Printf("err: [%s]\n", res.ParseError())
+		}
 	}
 
 	{
-		res, err := wasmCall(instance, handle, &Param{
+		res, err := wasmCall(instance, handle, &ContractParam{
 			Method: "inc",
 			Args:   []string{},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		if res.Ok() {
+			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
+		} else if res.Err() {
+			fmt.Printf("err: [%s]\n", res.ParseError())
+		}
 	}
 
 	{
-		res, err := wasmCall(instance, handle, &Param{
+		res, err := wasmCall(instance, handle, &ContractParam{
 			Method: "reset",
 			Args:   []string{"10"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		if res.Ok() {
+			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
+		} else if res.Err() {
+			fmt.Printf("err: [%s]\n", res.ParseError())
+		}
 	}
 
 	{
-		res, err := wasmCall(instance, query, &Param{
+		res, err := wasmCall(instance, query, &ContractParam{
 			Method: "init",
 			Args:   []string{},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		if res.Ok() {
+			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
+		} else if res.Err() {
+			fmt.Printf("err: [%s]\n", res.ParseError())
+		}
 	}
 
 	//{"method":"init","args":["3"]}
 	//write key [test-count], value [3]
-	//{"ok":{"messages":[],"log":[],"data":[91,34,51,34,44,34,105,110,105,116,34,93]}}
+	//ok: [["3","init"]]
 	//{"method":"inc","args":[]}
 	//read key [test-count]
 	//write key [test-count], value [4]
-	//{"ok":{"messages":[],"log":[],"data":[51]}}
+	//ok: [3]
 	//{"method":"reset","args":["10"]}
 	//write key [test-count], value [10]
-	//{"ok":{"messages":[],"log":[],"data":[91,34,49,48,34,44,34,114,101,115,101,116,34,93]}}
+	//ok: [["10","reset"]]
 	//{"method":"init","args":[]}
-	//{"ok":{"messages":[],"log":[],"data":[91,34,105,110,105,116,34,44,34,113,117,101,114,121,34,93]}}
+	//err: [Contract error: error test]
 
 }
 
@@ -169,7 +231,7 @@ func readCString(memory []byte) string {
 	return string(res)
 }
 
-func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (string, error) {
+func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (Result, error) {
 	allocate, exist := middleIns.fun["allocate"]
 	if !exist {
 		panic("allocate not found")
@@ -182,7 +244,7 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 	default:
 		res, err := json.Marshal(msg)
 		if err != nil {
-			return "", err
+			return Result{}, err
 		}
 		data = res
 	}
@@ -191,15 +253,22 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 
 	offset, err := allocate(len(data))
 	if err != nil {
-		return "", err
+		return Result{}, err
 	}
 	copy(instance.Memory.Data()[offset.ToI32():offset.ToI32()+int32(len(data))], data)
 
 	res, err := fun(offset)
 	if err != nil {
-		return "", err
+		return Result{}, err
 	}
-	return readCString(instance.Memory.Data()[res.ToI32():]), nil
+
+	str := readCString(instance.Memory.Data()[res.ToI32():])
+	resultMap := make(map[string]interface{})
+	if err := json.Unmarshal([]byte(str), &resultMap); err != nil {
+		return Result{}, err
+	}
+
+	return Result{_map: resultMap}, nil
 }
 
 func main() {

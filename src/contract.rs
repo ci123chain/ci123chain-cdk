@@ -13,8 +13,6 @@ pub fn init<S: Storage, A: Api>(
     let mut args = args;
     args.push(method);
     Ok(Response {
-        messages: vec![],
-        log: vec![],
         data: serde_json::to_vec(&args).unwrap(),
     })
 }
@@ -33,8 +31,6 @@ pub fn handle<S: Storage, A: Api>(
                 deps.storage
                     .set("count".as_bytes(), (count + 1).to_string().as_bytes());
                 return Ok(Response {
-                    messages: vec![],
-                    log: vec![],
                     data: data
                         .as_bytes()
                         .iter()
@@ -44,7 +40,7 @@ pub fn handle<S: Storage, A: Api>(
             }
             None => {
                 return Err(Error::NotFound {
-                    kind: "db error".to_string(),
+                    kind: "count".to_string(),
                 });
             }
         }
@@ -55,8 +51,6 @@ pub fn handle<S: Storage, A: Api>(
     let mut args = args;
     args.push(method);
     Ok(Response {
-        messages: vec![],
-        log: vec![],
         data: serde_json::to_vec(&args).unwrap(),
     })
 }
@@ -69,9 +63,10 @@ pub fn query<S: Storage, A: Api>(
     let mut args = args;
     args.push(method);
     args.push(String::from("query"));
-    Ok(Response {
-        messages: vec![],
-        log: vec![],
-        data: serde_json::to_vec(&args).unwrap(),
+    Err(Error::ContractErr {
+        msg: "error test".to_string(),
     })
+    // Ok(Response {
+    //     data: serde_json::to_vec(&args).unwrap(),
+    // })
 }
