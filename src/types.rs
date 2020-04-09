@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::mem;
 use std::os::raw::c_void;
 
+
 // This is the buffer we pre-allocate in get
 static MAX_READ: usize = 2000;
 
@@ -21,8 +22,6 @@ pub struct LogAttribute {
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
 pub struct Response {
     // let's make the positive case a struct, it contrains Msg: {...}, but also Data, Log, maybe later Events, etc.
-    pub messages: Vec<Message>,
-    pub log: Vec<LogAttribute>, // abci defines this as string
     pub data: Vec<u8>,          // abci defines this as bytes
 }
 

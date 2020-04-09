@@ -46,7 +46,7 @@ func GetBytes() []byte {
 	return res
 }
 
-func countContract() {
+func erc20Contract() {
 	//环境准备
 	imports, err := wasm.NewImports().Namespace("env").Append("read_db", read_db, C.read_db)
 	if err != nil {
@@ -102,63 +102,124 @@ func countContract() {
 	{
 		res, err := wasmCall(instance, init, &Param{
 			Method: "init",
-			Args:   []string{"3"},
+			Args:   []string{"token","addr1","100000"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		fmt.Println(string(res.Ok.Data))
 	}
 
 	{
 		res, err := wasmCall(instance, handle, &Param{
-			Method: "inc",
-			Args:   []string{},
+			Method: "transfer",
+			Args:   []string{"addr1","addr2","500"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
-	}
-
-	{
-		res, err := wasmCall(instance, handle, &Param{
-			Method: "reset",
-			Args:   []string{"10"},
-		})
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(res)
+		fmt.Println(string(res.Ok.Data))
 	}
 
 	{
 		res, err := wasmCall(instance, query, &Param{
-			Method: "init",
-			Args:   []string{},
+			Method: "balance",
+			Args:   []string{"addr1"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(res)
+		fmt.Println("addr1 balance :" +string(res.Ok.Data))
 	}
 
-	//{"method":"init","args":["3"]}
-	//write key [test-count], value [3]
-	//{"ok":{"messages":[],"log":[],"data":[91,34,51,34,44,34,105,110,105,116,34,93]}}
-	//{"method":"inc","args":[]}
-	//read key [test-count]
-	//write key [test-count], value [4]
-	//{"ok":{"messages":[],"log":[],"data":[51]}}
-	//{"method":"reset","args":["10"]}
-	//write key [test-count], value [10]
-	//{"ok":{"messages":[],"log":[],"data":[91,34,49,48,34,44,34,114,101,115,101,116,34,93]}}
-	//{"method":"init","args":[]}
-	//{"ok":{"messages":[],"log":[],"data":[91,34,105,110,105,116,34,44,34,113,117,101,114,121,34,93]}}
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr2"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("addr2 balance :" +string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "approve",
+			Args:   []string{"addr1","addr3","333"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "allowance",
+			Args:   []string{"addr1","addr3"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("addr3 in addr1 allowance :" + string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "transferFrom",
+			Args:   []string{"addr1","addr3","addr2","333"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr2"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("addr2 balance :" +string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr1"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("addr1 balance :" + string(res.Ok.Data))
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "allowance",
+			Args:   []string{"addr1","addr3"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("addr3 in addr1 allowance :" + string(res.Ok.Data))
+	}
 
 }
 
-func readCString(memory []byte) string {
+type RespW struct {
+    Ok  RespN   `json:"ok"`
+}
+
+type RespN struct {
+	Data []byte `json:"data"`
+}
+
+func readCString(memory []byte) *RespW {
 	var res []byte
 	for i := range memory {
 		if memory[i] == 0 {
@@ -166,10 +227,15 @@ func readCString(memory []byte) string {
 		}
 		res = append(res, memory[i])
 	}
-	return string(res)
+	var resp RespW
+	err := json.Unmarshal(res, &resp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return &resp
 }
 
-func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (string, error) {
+func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (*RespW, error) {
 	allocate, exist := middleIns.fun["allocate"]
 	if !exist {
 		panic("allocate not found")
@@ -182,7 +248,7 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 	default:
 		res, err := json.Marshal(msg)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		data = res
 	}
@@ -191,17 +257,17 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 
 	offset, err := allocate(len(data))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	copy(instance.Memory.Data()[offset.ToI32():offset.ToI32()+int32(len(data))], data)
 
 	res, err := fun(offset)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	return readCString(instance.Memory.Data()[res.ToI32():]), nil
 }
 
 func main() {
-	countContract()
+	erc20Contract()
 }

@@ -5,7 +5,7 @@ use snafu::Snafu;
 pub enum Error {
     #[snafu(display("Contract error: {}", msg))]
     ContractErr {
-        msg: String,
+        msg: &'static str,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
@@ -29,8 +29,8 @@ pub enum Error {
     },
     #[snafu(display("Invalid {}: {}", field, msg))]
     ValidationErr {
-        field: String,
-        msg: String,
+        field: &'static str,
+        msg: &'static str,
         // #[cfg(feature = "backtraces")]
         // backtrace: snafu::Backtrace,
     },
@@ -49,9 +49,9 @@ impl From<serde_json::Error> for Error {
 pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 pub fn contract_err<T>(msg: &'static str) -> Result<T> {
-    ContractErr { msg }.fail()
+    ContractErr{ msg }.fail()
 }
 
 pub fn invalid<T>(field: &'static str, msg: &'static str) -> Result<T> {
-    ValidationErr { field, msg }.fail()
+    ValidationErr{ field, msg }.fail()
 }
