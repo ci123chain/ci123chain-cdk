@@ -30,9 +30,25 @@ pub fn init<S: Storage, A: Api>(
     //set tokenName
     deps.storage.set((CONFIG_STORE.to_owned() + "tokenName").as_bytes(),args[0].as_bytes());
 
+    let a = deps.api.get_timestamp().unwrap();
+    let s1 = String::from_utf8(a).expect("Found invalid UTF-8");
+    let b = deps.api.get_creator().unwrap();
+    let s2 = String::from_utf8(b).expect("Found invalid UTF-8");
+    let c = deps.api.get_invoker().unwrap();
+    let s3 = String::from_utf8(c).expect("Found invalid UTF-8");
+
     let res:Vec<u8> = SUCCESS.as_bytes().iter().cloned().collect();
+
+    let rtr;
+    match deps.api.transfer(s3.as_str().as_bytes(),s2.as_str().as_bytes(),args[2].as_bytes()) {
+        Ok(res) =>  rtr = res,
+        Err(res) => rtr = res,
+    }
+    let s4 = rtr.to_string();
+
+    let s = format!("time:{}\ncreator:{}\ninvoker:{}\ntransfer:{}", s1, s2, s3, s4);
     Ok(Response {
-        data: res,
+        data: s.as_str().as_bytes().iter().cloned().collect(),
     })
 }
 

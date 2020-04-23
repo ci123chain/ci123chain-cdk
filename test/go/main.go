@@ -5,6 +5,10 @@ package main
 // extern int read_db(void *context, int key, int value);
 // extern void write_db(void *context, int key, int value);
 // extern void delete_db(void *context, int key);
+// extern int transfer(void *context, int fromPtr, int toPtr, int amountPtr);
+// extern void get_creator(void *context, int creatorPtr);
+// extern void get_invoker(void *context, int invokerPtr);
+// extern void get_time(void *context, int timePtr);
 import "C"
 import (
 	"encoding/json"
@@ -12,6 +16,26 @@ import (
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 	"unsafe"
 )
+
+//export transfer
+func transfer(context unsafe.Pointer, fromPtr int32, toPtr int32, amountPtr int32) int32{
+	return perform_transfer(context, fromPtr, toPtr, amountPtr)
+}
+
+//export get_creator
+func get_creator(context unsafe.Pointer, creatorPtr int32) {
+	getCreator(context, creatorPtr)
+}
+
+//export get_invoker
+func get_invoker(context unsafe.Pointer, invokerPtr int32) {
+	getInvoker(context, invokerPtr)
+}
+
+//export get_time
+func get_time(context unsafe.Pointer, timePtr int32) {
+	getTime(context, timePtr)
+}
 
 //export read_db
 func read_db(context unsafe.Pointer, key, value int32) int32 {
@@ -55,6 +79,13 @@ func erc20Contract() {
 
 	_, _ = imports.Namespace("env").Append("write_db", write_db, C.write_db)
 	_, _ = imports.Namespace("env").Append("delete_db", delete_db, C.delete_db)
+	_, err = imports.Namespace("env").Append("transfer", transfer, C.transfer)
+	_, err = imports.Namespace("env").Append("get_creator", get_creator, C.get_creator)
+	_, err = imports.Namespace("env").Append("get_invoker", get_invoker, C.get_invoker)
+    _, err = imports.Namespace("env").Append("get_time", get_time, C.get_time)
+    if err != nil {
+    	fmt.Println(err.Error())
+	}
 
 	module, err := wasm.Compile(GetBytes())
 	if err != nil {
@@ -107,7 +138,12 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(res.Ok.Data))
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -118,7 +154,26 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "transferErr",
+			Args:   []string{"addr1","addr2","500"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -129,7 +184,12 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr1 balance :" +string(res.Ok.Data))
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr1 balance :" +string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -140,7 +200,12 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr2 balance :" +string(res.Ok.Data))
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr2 balance :" +string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -151,7 +216,11 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -162,7 +231,11 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr3 in addr1 allowance :" + string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr3 in addr1 allowance :" +string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -173,7 +246,11 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println(string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -184,7 +261,11 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr2 balance :" +string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr2 balance :" +string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -195,7 +276,11 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr1 balance :" + string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr1 balance :" +string(res.Ok.Data))
+		}
 	}
 
 	{
@@ -206,13 +291,18 @@ func erc20Contract() {
 		if err != nil {
 			panic(err)
 		}
-		fmt.Println("addr3 in addr1 allowance :" + string(res.Ok.Data))
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr3 in addr1 allowance :" +string(res.Ok.Data))
+		}
 	}
 
 }
 
 type RespW struct {
     Ok  RespN   `json:"ok"`
+    Err string 	`json:"err"`
 }
 
 type RespN struct {
