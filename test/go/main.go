@@ -5,7 +5,7 @@ package main
 // extern int read_db(void *context, int key, int value);
 // extern void write_db(void *context, int key, int value);
 // extern void delete_db(void *context, int key);
-// extern int transfer(void *context, int fromPtr, int toPtr, int amountPtr);
+// extern int send(void *context, int toPtr, int amountPtr);
 // extern void get_creator(void *context, int creatorPtr);
 // extern void get_invoker(void *context, int invokerPtr);
 // extern void get_time(void *context, int timePtr);
@@ -17,9 +17,9 @@ import (
 	"unsafe"
 )
 
-//export transfer
-func transfer(context unsafe.Pointer, fromPtr int32, toPtr int32, amountPtr int32) int32{
-	return perform_transfer(context, fromPtr, toPtr, amountPtr)
+//export send
+func send(context unsafe.Pointer, toPtr int32, amountPtr int32) int32{
+	return perform_send(context, toPtr, amountPtr)
 }
 
 //export get_creator
@@ -79,7 +79,7 @@ func erc20Contract() {
 
 	_, _ = imports.Namespace("env").Append("write_db", write_db, C.write_db)
 	_, _ = imports.Namespace("env").Append("delete_db", delete_db, C.delete_db)
-	_, err = imports.Namespace("env").Append("transfer", transfer, C.transfer)
+	_, err = imports.Namespace("env").Append("send", send, C.send)
 	_, err = imports.Namespace("env").Append("get_creator", get_creator, C.get_creator)
 	_, err = imports.Namespace("env").Append("get_invoker", get_invoker, C.get_invoker)
     _, err = imports.Namespace("env").Append("get_time", get_time, C.get_time)

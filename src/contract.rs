@@ -39,12 +39,12 @@ pub fn init<S: Storage, A: Api>(
 
     let res:Vec<u8> = SUCCESS.as_bytes().iter().cloned().collect();
 
-    let rtr;
-    match deps.api.transfer(s3.as_str().as_bytes(),s2.as_str().as_bytes(),args[2].as_bytes()) {
-        Ok(res) =>  rtr = res,
-        Err(res) => rtr = res,
-    }
-    let s4 = rtr.to_string();
+    // let rtr;
+    // match deps.api.send(s2.as_str().as_bytes(),args[2].as_bytes()) {
+    //     Ok(res) =>  rtr = res,
+    //     Err(res) => rtr = res,
+    // }
+    // let s4 = rtr.to_string();
 
     let s = format!("time:{}\ncreator:{}\ninvoker:{}\ntransfer:{}", s1, s2, s3, s4);
     Ok(Response {

@@ -162,7 +162,7 @@ pub struct Extern<S: Storage, A: Api> {
 }
 
 pub trait Api {
-    fn transfer(&self, from: &[u8], to: &[u8], amount: &[u8]) -> Result<i32,i32>;
+    fn send(&self, to: &[u8], amount: &[u8]) -> Result<i32,i32>;
     fn get_creator(&self) -> Option<Vec<u8>>;
     fn get_invoker(&self) -> Option<Vec<u8>>;
     fn get_timestamp(&self) -> Option<Vec<u8>>;
@@ -177,15 +177,13 @@ impl ExternalApi {
 }
 
 impl Api for ExternalApi {
-    fn transfer(&self, from: &[u8], to: &[u8], amount: &[u8]) -> Result<i32,i32>{
-        let mut from = build_region(from);
-        let from_ptr = &mut *from as *mut Region as *mut c_void;
+    fn send(&self, to: &[u8], amount: &[u8]) -> Result<i32,i32>{
         let mut to = build_region(to);
         let to_ptr = &mut *to as *mut Region as *mut c_void;
         let mut amount = build_region(amount);
         let amount_ptr = &mut *amount as *mut Region as *mut c_void;
 
-        let res = unsafe { transfer(from_ptr,to_ptr,amount_ptr)};
+        let res = unsafe { send(to_ptr,amount_ptr)};
         if res == 0 {
             Ok(0)
         } else {
@@ -322,7 +320,7 @@ extern "C" {
     fn read_db(key: *const c_void, value: *mut c_void) -> i32;
     fn write_db(key: *const c_void, value: *mut c_void);
     fn delete_db(key: *const c_void);
-    fn transfer(from_ptr: *mut c_void, to_ptr: *mut c_void, amount_ptr: *mut c_void) -> i32;
+    fn send(to_ptr: *mut c_void, amount_ptr: *mut c_void) -> i32;
     fn get_creator(creator_ptr: *mut c_void);
     fn get_invoker(invoker_ptr: *mut c_void);
     fn get_time(time_ptr: *mut c_void);
