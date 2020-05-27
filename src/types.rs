@@ -3,46 +3,45 @@ use serde::{Deserialize, Serialize};
 use std::mem;
 use std::os::raw::c_void;
 
+
 // This is the buffer we pre-allocate in get
 static MAX_READ: usize = 2000;
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
-pub struct ContractParam {
+pub struct Param {
     pub method: String,
     pub args: Vec<String>,
 }
 
-// #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
-// pub struct LogAttribute {
-//     pub key: String,
-//     pub value: String,
-// }
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+pub struct LogAttribute {
+    pub key: String,
+    pub value: String,
+}
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
 pub struct Response {
-    // // let's make the positive case a struct, it contrains Msg: {...}, but also Data, Log, maybe later Events, etc.
-    // pub messages: Vec<Message>,
-    // pub log: Vec<LogAttribute>, // abci defines this as string
+    // let's make the positive case a struct, it contrains Msg: {...}, but also Data, Log, maybe later Events, etc.
     pub data: Vec<u8>,          // abci defines this as bytes
 }
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// #[serde(rename_all = "lowercase")]
-// pub enum Message {
-//     // this moves tokens in the underlying sdk
-//     Send {
-//         from_address: Addr,
-//         to_address: Addr,
-//         amount: Vec<Coin>,
-//     },
-//     // this dispatches a call to another contract at a known address (with known ABI)
-//     // msg is the json-encoded HandleMsg struct
-//     Contract {
-//         contract_addr: Addr,
-//         msg: Vec<u8>,
-//         send: Option<Vec<Coin>>,
-//     },
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum Message {
+    // this moves tokens in the underlying sdk
+    Send {
+        from_address: Addr,
+        to_address: Addr,
+        amount: Vec<Coin>,
+    },
+    // this dispatches a call to another contract at a known address (with known ABI)
+    // msg is the json-encoded HandleMsg struct
+    Contract {
+        contract_addr: Addr,
+        msg: Vec<u8>,
+        send: Option<Vec<Coin>>,
+    },
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -68,55 +67,55 @@ impl ContractResult {
     }
 }
 
-// #[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
-// pub struct Addr(pub String);
+#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+pub struct Addr(pub String);
 
-// impl Addr {
-//     pub fn as_str(&self) -> &str {
-//         &self.0
-//     }
-//     pub fn len(&self) -> usize {
-//         self.0.len()
-//     }
-//     pub fn is_empty(&self) -> bool {
-//         self.0.is_empty()
-//     }
-// }
+impl Addr {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct Env {
-//     pub block: BlockInfo,
-//     pub message: MessageInfo,
-//     pub contract: ContractInfo,
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Env {
+    pub block: BlockInfo,
+    pub message: MessageInfo,
+    pub contract: ContractInfo,
+}
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct BlockInfo {
-//     pub height: i64,
-//     // time is seconds since epoch begin (Jan. 1, 1970)
-//     pub time: i64,
-//     pub chain_id: String,
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct BlockInfo {
+    pub height: i64,
+    // time is seconds since epoch begin (Jan. 1, 1970)
+    pub time: i64,
+    pub chain_id: String,
+}
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct MessageInfo {
-//     pub signer: Addr,
-//     // go likes to return null for empty array, make sure we can parse it (use option)
-//     pub sent_funds: Option<Vec<Coin>>,
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct MessageInfo {
+    pub signer: Addr,
+    // go likes to return null for empty array, make sure we can parse it (use option)
+    pub sent_funds: Option<Vec<Coin>>,
+}
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct ContractInfo {
-//     pub address: Addr,
-//     // go likes to return null for empty array, make sure we can parse it (use option)
-//     pub balance: Option<Vec<Coin>>,
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ContractInfo {
+    pub address: Addr,
+    // go likes to return null for empty array, make sure we can parse it (use option)
+    pub balance: Option<Vec<Coin>>,
+}
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct Coin {
-//     pub denom: String,
-//     pub amount: String,
-// }
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Coin {
+    pub denom: String,
+    pub amount: String,
+}
 
 // #[derive(Debug)]
 // struct Deps {
@@ -162,7 +161,12 @@ pub struct Extern<S: Storage, A: Api> {
     pub api: A,
 }
 
-pub trait Api {}
+pub trait Api {
+    fn send(&self, to: &[u8], amount: &[u8]) -> Result<i32,i32>;
+    fn get_creator(&self) -> Option<Vec<u8>>;
+    fn get_invoker(&self) -> Option<Vec<u8>>;
+    fn get_timestamp(&self) -> Option<Vec<u8>>;
+}
 
 pub struct ExternalApi {}
 
@@ -172,7 +176,66 @@ impl ExternalApi {
     }
 }
 
-impl Api for ExternalApi {}
+impl Api for ExternalApi {
+    fn send(&self, to: &[u8], amount: &[u8]) -> Result<i32,i32>{
+        let mut to = build_region(to);
+        let to_ptr = &mut *to as *mut Region as *mut c_void;
+        let mut amount = build_region(amount);
+        let amount_ptr = &mut *amount as *mut Region as *mut c_void;
+
+        let res = unsafe { send(to_ptr,amount_ptr)};
+        if res == 0 {
+            Ok(0)
+        } else {
+            Err(1)
+        }
+    }
+
+    fn get_creator(&self) -> Option<Vec<u8>>{
+        let creator_ptr = allocate(MAX_READ);
+        unsafe { get_creator(creator_ptr) }
+        match unsafe { consume_region(creator_ptr) } {
+            Ok(data) => {
+                if data.len() == 0 {
+                    None
+                } else {
+                    Some(data)
+                }
+            }
+            Err(_) => None,
+        }
+    }
+
+    fn get_invoker(&self) -> Option<Vec<u8>> {
+        let invoker_ptr = allocate(MAX_READ);
+        unsafe { get_invoker(invoker_ptr) }
+        match unsafe { consume_region(invoker_ptr) } {
+            Ok(data) => {
+                if data.len() == 0 {
+                    None
+                } else {
+                    Some(data)
+                }
+            }
+            Err(_) => None,
+        }
+    }
+
+    fn get_timestamp(&self) -> Option<Vec<u8>>{
+        let time_ptr = allocate(MAX_READ);
+        unsafe { get_time(time_ptr) }
+        match unsafe { consume_region(time_ptr) } {
+            Ok(data) => {
+                if data.len() == 0 {
+                    None
+                } else {
+                    Some(data)
+                }
+            }
+            Err(_) => None,
+        }
+    }
+}
 
 pub trait Storage {
     fn set(&mut self, key: &[u8], value: &[u8]);
@@ -257,6 +320,10 @@ extern "C" {
     fn read_db(key: *const c_void, value: *mut c_void) -> i32;
     fn write_db(key: *const c_void, value: *mut c_void);
     fn delete_db(key: *const c_void);
+    fn send(to_ptr: *mut c_void, amount_ptr: *mut c_void) -> i32;
+    fn get_creator(creator_ptr: *mut c_void);
+    fn get_invoker(invoker_ptr: *mut c_void);
+    fn get_time(time_ptr: *mut c_void);
 }
 
 /// Refers to some heap allocated data in Wasm.

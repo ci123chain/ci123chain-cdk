@@ -5,14 +5,37 @@ package main
 // extern int read_db(void *context, int key, int value);
 // extern void write_db(void *context, int key, int value);
 // extern void delete_db(void *context, int key);
+// extern int send(void *context, int toPtr, int amountPtr);
+// extern void get_creator(void *context, int creatorPtr);
+// extern void get_invoker(void *context, int invokerPtr);
+// extern void get_time(void *context, int timePtr);
 import "C"
 import (
 	"encoding/json"
 	"fmt"
-	"unsafe"
-
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
+	"unsafe"
 )
+
+//export send
+func send(context unsafe.Pointer, toPtr int32, amountPtr int32) int32{
+	return perform_send(context, toPtr, amountPtr)
+}
+
+//export get_creator
+func get_creator(context unsafe.Pointer, creatorPtr int32) {
+	getCreator(context, creatorPtr)
+}
+
+//export get_invoker
+func get_invoker(context unsafe.Pointer, invokerPtr int32) {
+	getInvoker(context, invokerPtr)
+}
+
+//export get_time
+func get_time(context unsafe.Pointer, timePtr int32) {
+	getTime(context, timePtr)
+}
 
 //export read_db
 func read_db(context unsafe.Pointer, key, value int32) int32 {
@@ -47,57 +70,7 @@ func GetBytes() []byte {
 	return res
 }
 
-type ContractParam struct {
-	Method string   `json:"method"`
-	Args   []string `json:"args"`
-}
-
-type Result struct {
-	_map  map[string]interface{}
-	_data interface{}
-}
-
-func (result *Result) Ok() bool {
-	if data, exist := result._map["ok"]; exist {
-		result._data = data
-		return true
-	}
-	return false
-}
-
-func (result *Result) Err() bool {
-	if data, exist := result._map["err"]; exist {
-		result._data = data
-		return true
-	}
-	return false
-}
-
-// called after Ok()
-func (result *Result) Parse() Response {
-	var response Response
-	b, _ := json.Marshal(result._data)
-	_ = json.Unmarshal(b, &response)
-	return response
-}
-
-// called after Err()
-func (result *Result) ParseError() string {
-	return result._data.(string)
-}
-
-type Response struct {
-	//Message []map[string]interface{} `json:"message"`
-	//Log     []LogAttribute           `json:"log"`
-	Data []byte `json:"data"`
-}
-
-//type LogAttribute struct {
-//	Key   string `json:"key"`
-//	Value string `json:"value"`
-//}
-
-func countContract() {
+func erc20Contract() {
 	//环境准备
 	imports, err := wasm.NewImports().Namespace("env").Append("read_db", read_db, C.read_db)
 	if err != nil {
@@ -106,6 +79,13 @@ func countContract() {
 
 	_, _ = imports.Namespace("env").Append("write_db", write_db, C.write_db)
 	_, _ = imports.Namespace("env").Append("delete_db", delete_db, C.delete_db)
+	_, err = imports.Namespace("env").Append("send", send, C.send)
+	_, err = imports.Namespace("env").Append("get_creator", get_creator, C.get_creator)
+	_, err = imports.Namespace("env").Append("get_invoker", get_invoker, C.get_invoker)
+    _, err = imports.Namespace("env").Append("get_time", get_time, C.get_time)
+    if err != nil {
+    	fmt.Println(err.Error())
+	}
 
 	module, err := wasm.Compile(GetBytes())
 	if err != nil {
@@ -144,83 +124,192 @@ func countContract() {
 		return
 	}
 
+	type Param struct {
+		Method string   `json:"method"`
+		Args   []string `json:"args"`
+	}
+
 	//调用
 	{
-		res, err := wasmCall(instance, init, &ContractParam{
+		res, err := wasmCall(instance, init, &Param{
 			Method: "init",
-			Args:   []string{"3"},
+			Args:   []string{"token","addr1","100000"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		if res.Ok() {
-			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
-		} else if res.Err() {
-			fmt.Printf("err: [%s]\n", res.ParseError())
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
 		}
 	}
 
 	{
-		res, err := wasmCall(instance, handle, &ContractParam{
-			Method: "inc",
-			Args:   []string{},
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "transfer",
+			Args:   []string{"addr1","addr2","500"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		if res.Ok() {
-			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
-		} else if res.Err() {
-			fmt.Printf("err: [%s]\n", res.ParseError())
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
 		}
 	}
 
 	{
-		res, err := wasmCall(instance, handle, &ContractParam{
-			Method: "reset",
-			Args:   []string{"10"},
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "transferErr",
+			Args:   []string{"addr1","addr2","500"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		if res.Ok() {
-			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
-		} else if res.Err() {
-			fmt.Printf("err: [%s]\n", res.ParseError())
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
 		}
 	}
 
 	{
-		res, err := wasmCall(instance, query, &ContractParam{
-			Method: "init",
-			Args:   []string{},
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr1"},
 		})
 		if err != nil {
 			panic(err)
 		}
-		if res.Ok() {
-			fmt.Printf("ok: [%s]\n", string(res.Parse().Data))
-		} else if res.Err() {
-			fmt.Printf("err: [%s]\n", res.ParseError())
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr1 balance :" +string(res.Ok.Data))
 		}
 	}
 
-	//{"method":"init","args":["3"]}
-	//write key [test-count], value [3]
-	//ok: [["3","init"]]
-	//{"method":"inc","args":[]}
-	//read key [test-count]
-	//write key [test-count], value [4]
-	//ok: [3]
-	//{"method":"reset","args":["10"]}
-	//write key [test-count], value [10]
-	//ok: [["10","reset"]]
-	//{"method":"init","args":[]}
-	//err: [Contract error: error test]
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr2"},
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr2 balance :" +string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "approve",
+			Args:   []string{"addr1","addr3","333"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "allowance",
+			Args:   []string{"addr1","addr3"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr3 in addr1 allowance :" +string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, handle, &Param{
+			Method: "transferFrom",
+			Args:   []string{"addr1","addr3","addr2","333"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println(string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr2"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr2 balance :" +string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "balance",
+			Args:   []string{"addr1"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr1 balance :" +string(res.Ok.Data))
+		}
+	}
+
+	{
+		res, err := wasmCall(instance, query, &Param{
+			Method: "allowance",
+			Args:   []string{"addr1","addr3"},
+		})
+		if err != nil {
+			panic(err)
+		}
+		if res.Err != "" {
+			fmt.Println(res.Err)
+		} else {
+			fmt.Println("addr3 in addr1 allowance :" +string(res.Ok.Data))
+		}
+	}
 
 }
 
-func readCString(memory []byte) string {
+type RespW struct {
+    Ok  RespN   `json:"ok"`
+    Err string 	`json:"err"`
+}
+
+type RespN struct {
+	Data []byte `json:"data"`
+}
+
+func readCString(memory []byte) *RespW {
 	var res []byte
 	for i := range memory {
 		if memory[i] == 0 {
@@ -228,10 +317,15 @@ func readCString(memory []byte) string {
 		}
 		res = append(res, memory[i])
 	}
-	return string(res)
+	var resp RespW
+	err := json.Unmarshal(res, &resp)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return &resp
 }
 
-func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (Result, error) {
+func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, error), msg interface{}) (*RespW, error) {
 	allocate, exist := middleIns.fun["allocate"]
 	if !exist {
 		panic("allocate not found")
@@ -244,7 +338,7 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 	default:
 		res, err := json.Marshal(msg)
 		if err != nil {
-			return Result{}, err
+			return nil, err
 		}
 		data = res
 	}
@@ -253,24 +347,17 @@ func wasmCall(instance wasm.Instance, fun func(...interface{}) (wasm.Value, erro
 
 	offset, err := allocate(len(data))
 	if err != nil {
-		return Result{}, err
+		return nil, err
 	}
 	copy(instance.Memory.Data()[offset.ToI32():offset.ToI32()+int32(len(data))], data)
 
 	res, err := fun(offset)
 	if err != nil {
-		return Result{}, err
+		return nil, err
 	}
-
-	str := readCString(instance.Memory.Data()[res.ToI32():])
-	resultMap := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(str), &resultMap); err != nil {
-		return Result{}, err
-	}
-
-	return Result{_map: resultMap}, nil
+	return readCString(instance.Memory.Data()[res.ToI32():]), nil
 }
 
 func main() {
-	countContract()
+	erc20Contract()
 }

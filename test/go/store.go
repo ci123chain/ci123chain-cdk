@@ -26,11 +26,12 @@ func readDB(context unsafe.Pointer, key, value int32) int32 {
 		panic("allocate not found")
 	}
 
+    var size int;
 	if _, exist := store[string(realKey)]; !exist {
-		panic(string(realKey) + " not found")
+		size = 0
+	}else {
+		size = len(store[string(realKey)])
 	}
-
-	size := len(store[string(realKey)])
 
 	valueOffset, err := allocate(size)
 	if err != nil {
