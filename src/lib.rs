@@ -1,37 +1,25 @@
-pub mod contract;
 pub mod errors;
-pub mod export;
+pub mod runtime;
 pub mod types;
 
-pub mod wasm {
-    use super::contract;
-    use super::export;
-    use super::types;
+use std::collections::HashMap;
 
-    use std::os::raw::{c_char, c_void};
-
-    #[no_mangle]
-    pub extern "C" fn init(msg: *mut c_char) -> *mut c_char {
-        export::do_init(&contract::init::<types::Store, types::ExternalApi>, msg)
+#[no_mangle]
+pub fn invoke() {
+    let deps = runtime::make_dependencies();
+    let param = deps.api.input();
+    let mut msg = param.args;
+    msg.push(param.method);
+    let mut ret = String::from("msg:");
+    for i in 0..msg.len() {
+        ret += &msg[i];
     }
-
-    #[no_mangle]
-    pub extern "C" fn handle(msg: *mut c_char) -> *mut c_char {
-        export::do_handle(&contract::handle::<types::Store, types::ExternalApi>, msg)
-    }
-
-    #[no_mangle]
-    pub extern "C" fn query(msg: *mut c_char) -> *mut c_char {
-        export::do_query(&contract::query::<types::Store, types::ExternalApi>, msg)
-    }
-
-    #[no_mangle]
-    pub extern "C" fn allocate(size: usize) -> *mut c_void {
-        types::allocate(size)
-    }
-
-    #[no_mangle]
-    pub extern "C" fn deallocate(pointer: *mut c_void, capacity: usize) {
-        types::deallocate(pointer, capacity)
-    }
+    let mut map = HashMap::new();
+    map.insert(
+        String::from("i guess"),
+        runtime::ItemValue::String(String::from("time machine")),
+    );
+    map.insert(String::from("so answer"), runtime::ItemValue::Int64(765));
+    runtime::notify(&runtime::Event::new(String::from("notiii"), map));
+    runtime::ret(ret.as_bytes())
 }
