@@ -11,6 +11,15 @@ use std::os::raw::c_void;
 // This is the buffer we pre-allocate in get
 static MAX_READ: usize = 2000;
 
+#[macro_export]
+macro_rules! hashmap {
+    ($( $key: expr => $val: expr ),*) => {{
+         let mut map = ::std::collections::HashMap::new();
+         $( map.insert($key, $val); )*
+         map
+    }}
+}
+
 pub fn make_dependencies() -> Dependencies {
     Dependencies {
         storage: Store::new(),
@@ -93,33 +102,66 @@ impl Store {
         }
     }
 
+    // pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        
+    //     let mut prefix = self.prefix.clone();
+    //     let real_key = unsafe { prefix.as_mut_vec() };
+    //     for &ele in key {
+    //         real_key.push(ele);
+    //     }
+    //     let key = build_region(real_key);
+    //     let key_ptr = &*key as *const Region as *const c_void;
+    //     let value = allocate(MAX_READ);
+
+    //     let read = unsafe { read_db(key_ptr, value) };
+    //     if read == -1000002 {
+    //         panic!("Allocated memory too small to hold the database value for the given key.");
+    //     } else if read < 0 {
+    //         panic!("An unknown error occurred in the read_db call.")
+    //     }
+
+    //     match unsafe { consume_region(value) } {
+    //         Ok(data) => {
+    //             if data.len() == 0 {
+    //                 None
+    //             } else {
+    //                 Some(data)
+    //             }
+    //         }
+    //         Err(_) => None,
+    //     }
+    // }
+
     pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
+        const INITIAL: usize = 32;
+        let mut val = vec![0; INITIAL];
+        
         let mut prefix = self.prefix.clone();
         let real_key = unsafe { prefix.as_mut_vec() };
         for &ele in key {
             real_key.push(ele);
         }
+
         let key = build_region(real_key);
         let key_ptr = &*key as *const Region as *const c_void;
-        let value = allocate(MAX_READ);
 
-        let read = unsafe { read_db(key_ptr, value) };
-        if read == -1000002 {
-            panic!("Allocated memory too small to hold the database value for the given key.");
-        } else if read < 0 {
-            panic!("An unknown error occurred in the read_db call.")
+        let size = unsafe { read_db(key_ptr, val.as_mut_ptr(), val.len() as u32, 0) };
+        let size = size as usize;
+        val.resize(size, 0);
+        if size > INITIAL {
+            let value = &mut val[INITIAL..];
+            debug_assert!(value.len() == size - INITIAL);
+            unsafe {
+                read_db(
+                    key_ptr,
+                    value.as_mut_ptr(),
+                    value.len() as u32,
+                    INITIAL as i32,
+                )
+            };
         }
 
-        match unsafe { consume_region(value) } {
-            Ok(data) => {
-                if data.len() == 0 {
-                    None
-                } else {
-                    Some(data)
-                }
-            }
-            Err(_) => None,
-        }
+        Some(val)
     }
 
     pub fn delete(&self, key: &[u8]) {
@@ -149,7 +191,7 @@ impl ExternalApi {
         let input_len = unsafe { get_input_length() };
         let buffer: Vec<u8> = vec![0; input_len as usize];
         let pointer = buffer.as_ptr();
-        unsafe { get_input(pointer) };
+        unsafe { get_input(pointer, input_len) };
         let param: Param = serde_json::from_slice(&buffer.as_ref()).unwrap();
         return param;
     }
@@ -198,36 +240,26 @@ impl ExternalApi {
         }
     }
 
-    pub fn get_timestamp(&self) -> Option<Vec<u8>> {
-        let time_ptr = allocate(MAX_READ);
-        unsafe { get_time(time_ptr) }
-        match unsafe { consume_region(time_ptr) } {
-            Ok(data) => {
-                if data.len() == 0 {
-                    None
-                } else {
-                    Some(data)
-                }
-            }
-            Err(_) => None,
-        }
+    pub fn get_timestamp(&self) -> Option<u64> {
+        let data = unsafe { get_time() };
+        Some(data)
     }
 }
 
 // This interface will compile into required Wasm imports.
 extern "C" {
     fn get_input_length() -> i32;
-    fn get_input(method: *const u8);
+    fn get_input(method: *const u8, size: i32);
     fn notify_contract(msg: *const c_void);
     fn return_contract(value: *const c_void);
 
-    fn read_db(key: *const c_void, value: *mut c_void) -> i32;
+    fn read_db(key: *const c_void, value: *mut u8, vsize: u32, offset: i32) -> i32;
     fn write_db(key: *const c_void, value: *mut c_void);
     fn delete_db(key: *const c_void);
     fn send(to_ptr: *mut c_void, amount_ptr: *mut c_void) -> i32;
     fn get_creator(creator_ptr: *mut c_void);
     fn get_invoker(invoker_ptr: *mut c_void);
-    fn get_time(time_ptr: *mut c_void);
+    fn get_time() -> u64;
 }
 
 /// Refers to some heap allocated data in Wasm.

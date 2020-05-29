@@ -2,7 +2,7 @@ package main
 
 // #include <stdlib.h>
 //
-// extern int read_db(void *context, int key, int value);
+// extern int read_db(void *context, int key, int value, int vsize, int offset);
 // extern void write_db(void *context, int key, int value);
 // extern void delete_db(void *context, int key);
 // extern int send(void *context, int toPtr, int amountPtr);
@@ -17,10 +17,12 @@ import "C"
 import (
 	"encoding/json"
 	"fmt"
-	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 	"unsafe"
+
+	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
+var inputData = "this is input data"
 var length = 0
 var message []byte
 
@@ -45,8 +47,8 @@ func get_time(context unsafe.Pointer, timePtr int32) {
 }
 
 //export read_db
-func read_db(context unsafe.Pointer, key, value int32) int32 {
-	return readDB(context, key, value)
+func read_db(context unsafe.Pointer, key, value, vsize, offset int32) int32 {
+	return readDB(context, key, value, vsize, offset)
 }
 
 //export write_db

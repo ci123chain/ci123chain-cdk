@@ -1,8 +1,8 @@
 pub mod errors;
 pub mod runtime;
 pub mod types;
-
-use std::collections::HashMap;
+use runtime::ItemValue::String as IString;
+// use runtime::ItemValue::Int64 as IInt64;
 
 #[no_mangle]
 pub fn invoke() {
@@ -14,12 +14,29 @@ pub fn invoke() {
     for i in 0..msg.len() {
         ret += &msg[i];
     }
-    let mut map = HashMap::new();
-    map.insert(
-        String::from("i guess"),
-        runtime::ItemValue::String(String::from("time machine")),
-    );
-    map.insert(String::from("so answer"), runtime::ItemValue::Int64(765));
-    runtime::notify(&runtime::Event::new(String::from("notiii"), map));
-    runtime::ret(ret.as_bytes())
+    
+}
+
+fn event() {
+    let map = hashmap!["A".to_string() => IString(String::from("time machine"))];
+    runtime::notify(&runtime::Event::new("notify_name".to_string(), map));
+    runtime::ret("success".as_bytes())
+}
+
+fn get_address() {
+
+}
+
+fn time_stamp() -> u64 {
+    let deps = runtime::make_dependencies();
+    deps.api.get_timestamp().unwrap()
+}
+
+fn read_db(key: String) -> String {
+    let val = runtime::make_dependencies().storage.get(key.as_bytes()).unwrap();
+    String::from_utf8(val).unwrap()
+}
+
+fn write_db(key: String, value: String) {
+    runtime::make_dependencies().storage.set(key.as_bytes(), value.as_bytes())
 }

@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"encoding/binary"
 	"fmt"
-	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 	"unsafe"
+
+	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
 const RegionSize = 12
@@ -13,7 +14,7 @@ const RegionSize = 12
 var store = map[string]string{}
 
 //export read_db
-func readDB(context unsafe.Pointer, key, value int32) int32 {
+func readDB(context unsafe.Pointer, key, valuePtr, vsize, offset int32) int32 {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
 	keyAddr := NewRegion(memory[key : key+RegionSize])
@@ -21,32 +22,20 @@ func readDB(context unsafe.Pointer, key, value int32) int32 {
 
 	fmt.Printf("read key [%s]\n", string(realKey))
 
-	allocate, exist := middleIns.fun["allocate"]
-	if !exist {
-		panic("allocate not found")
-	}
-
-    var size int;
-	if _, exist := store[string(realKey)]; !exist {
+	var size int
+	if val, exist := store[string(realKey)]; !exist {
 		size = 0
-	}else {
+	} else {
 		size = len(store[string(realKey)])
 	}
 
-	valueOffset, err := allocate(size)
 	if err != nil {
 		panic(err)
 	}
-	copy(memory[valueOffset.ToI32():valueOffset.ToI32()+int32(size)], store[string(realKey)])
+	copyedData = []byte(val)[offset:]
+	copy(memory[valuePtr.ToI32():valuePtr.ToI32()+int32(vsize)], copyedData)
 
-	region := Region{
-		Offset:   uint32(valueOffset.ToI32()),
-		Capacity: uint32(size),
-		Length:   uint32(size),
-	}
-	copy(memory[value:value+RegionSize], region.ToBytes())
-
-	return 0
+	return size
 }
 
 //export write_db

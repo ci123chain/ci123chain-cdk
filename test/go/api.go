@@ -2,10 +2,21 @@ package main
 
 import (
 	"fmt"
-	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 	"time"
 	"unsafe"
+
+	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
+
+func get_input_length(context unsafe.Pointer) int32 {
+	return len([]byte(inputData))
+}
+
+func get_input(context unsafe.Pointer, dataPtr, length int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+	copy(memory[dataPtr.ToI32():dataPtr.ToI32()+int32(length)], []byte(inputData))
+}
 
 func perform_send(context unsafe.Pointer, toPtr int32, amountPtr int32) int32 {
 	var err error
@@ -13,11 +24,11 @@ func perform_send(context unsafe.Pointer, toPtr int32, amountPtr int32) int32 {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
 
-	toAddr := NewRegion(memory[toPtr : toPtr + RegionSize])
-	to := memory[toAddr.Offset : toAddr.Offset + toAddr.Length]
+	toAddr := NewRegion(memory[toPtr : toPtr+RegionSize])
+	to := memory[toAddr.Offset : toAddr.Offset+toAddr.Length]
 
-	amountAddr := NewRegion(memory[amountPtr : amountPtr + RegionSize])
-	amount := memory[amountAddr.Offset : amountAddr.Offset + amountAddr.Length]
+	amountAddr := NewRegion(memory[amountPtr : amountPtr+RegionSize])
+	amount := memory[amountAddr.Offset : amountAddr.Offset+amountAddr.Length]
 
 	fmt.Println("go get:" + string(to))
 	fmt.Println("go get:" + string(amount))
