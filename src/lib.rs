@@ -3,40 +3,72 @@ pub mod runtime;
 pub mod types;
 use runtime::ItemValue::String as IString;
 // use runtime::ItemValue::Int64 as IInt64;
+use types::Address;
 
 #[no_mangle]
 pub fn invoke() {
     let deps = runtime::make_dependencies();
     let param = deps.api.input();
-    let mut msg = param.args;
-    msg.push(param.method);
-    let mut ret = String::from("msg:");
-    for i in 0..msg.len() {
-        ret += &msg[i];
+    match param.method.as_str() {
+        "read_db" => {
+            event(param.method, read_db(param.args[0].as_str()));
+        }
+        "write_db" => {
+            write_db(param.args[0].as_str(), param.args[1].as_str());
+            event(param.method, param.args[0].clone());
+        }
+        "delete_db" => {
+            delete_db(param.args[0].as_str());
+            event(param.method, param.args[0].clone());
+        }
+        "send" => {
+            let mut addr = [0; 20];
+            for i in 0..20 {
+                addr[i] = param.args[0].as_bytes()[i];
+            }
+            let res = deps
+                .api
+                .send(&Address::new(&addr), param.args[1].parse().unwrap());
+            event(param.method, res.unwrap().to_string());
+        }
+        "get_creator" => {
+            let creator = deps.api.get_creator();
+            event(param.method, creator.to_hex_string());
+        }
+        "get_invoker" => {
+            let invoker = deps.api.get_invoker();
+            event(param.method, invoker.to_hex_string());
+        }
+        "get_time" => {
+            let time_stamp = deps.api.get_timestamp();
+            event(param.method, time_stamp.unwrap().to_string());
+        }
+        _ => {
+            event(param.method, String::from("无效方法"));
+        }
     }
-    
-}
-
-fn event() {
-    let map = hashmap!["A".to_string() => IString(String::from("time machine"))];
-    runtime::notify(&runtime::Event::new("notify_name".to_string(), map));
     runtime::ret("success".as_bytes())
 }
 
-fn get_address() {
-
+fn event(method: String, msg: String) {
+    let map = hashmap!["msg".to_string() => IString(msg)];
+    runtime::notify(&runtime::Event::new(method, map));
 }
 
-fn time_stamp() -> u64 {
-    let deps = runtime::make_dependencies();
-    deps.api.get_timestamp().unwrap()
-}
-
-fn read_db(key: String) -> String {
-    let val = runtime::make_dependencies().storage.get(key.as_bytes()).unwrap();
+fn read_db(key: &str) -> String {
+    let val = runtime::make_dependencies()
+        .storage
+        .get(key.as_bytes())
+        .unwrap();
     String::from_utf8(val).unwrap()
 }
 
-fn write_db(key: String, value: String) {
-    runtime::make_dependencies().storage.set(key.as_bytes(), value.as_bytes())
+fn write_db(key: &str, value: &str) {
+    runtime::make_dependencies()
+        .storage
+        .set(key.as_bytes(), value.as_bytes())
+}
+
+fn delete_db(key: &str) {
+    runtime::make_dependencies().storage.delete(key.as_bytes())
 }

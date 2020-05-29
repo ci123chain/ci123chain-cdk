@@ -1,89 +1,60 @@
 package main
 
 import (
-	"bytes"
-	"encoding/binary"
 	"fmt"
 	"unsafe"
 
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
-const RegionSize = 12
-
 var store = map[string]string{}
 
-//export read_db
-func readDB(context unsafe.Pointer, key, valuePtr, vsize, offset int32) int32 {
+func readDB(context unsafe.Pointer, keyPtr, keySize, valuePtr, valueSize, offset int32) int32 {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
-	keyAddr := NewRegion(memory[key : key+RegionSize])
-	realKey := memory[keyAddr.Offset : keyAddr.Offset+keyAddr.Length]
+
+	realKey := memory[keyPtr: keyPtr + keySize]
 
 	fmt.Printf("read key [%s]\n", string(realKey))
 
 	var size int
-	if val, exist := store[string(realKey)]; !exist {
-		size = 0
-	} else {
-		size = len(store[string(realKey)])
+	realValue := store[string(realKey)]
+	size = len(realValue) // 如果key不存在 则size为0
+
+	if offset >= int32(size) {
+		return 0
 	}
 
-	if err != nil {
-		panic(err)
+	index := offset + valueSize
+	if index > int32(size) {
+		index = int32(size)
 	}
-	copyedData = []byte(val)[offset:]
-	copy(memory[valuePtr.ToI32():valuePtr.ToI32()+int32(vsize)], copyedData)
 
-	return size
+	copiedData := []byte(realValue)[offset: index]
+	copy(memory[valuePtr:valuePtr+valueSize], copiedData)
+
+	return int32(size)
 }
 
-//export write_db
-func writeDB(context unsafe.Pointer, key, value int32) {
+func writeDB(context unsafe.Pointer, keyPtr, keySize, valuePtr, valueSize int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
-	keyAddr := NewRegion(memory[key : key+RegionSize])
-	realKey := memory[keyAddr.Offset : keyAddr.Offset+keyAddr.Length]
-	valueAddr := NewRegion(memory[value : value+RegionSize])
-	realValue := memory[valueAddr.Offset : valueAddr.Offset+valueAddr.Length]
+
+	realKey := memory[keyPtr: keyPtr + keySize]
+	realValue := memory[valuePtr: valuePtr + valueSize]
 
 	fmt.Printf("write key [%s], value [%s]\n", string(realKey), string(realValue))
 
 	store[string(realKey)] = string(realValue)
 }
 
-//export delete_db
-func deleteDB(context unsafe.Pointer, key int32) {
+func deleteDB(context unsafe.Pointer, keyPtr, keySize int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
-	keyAddr := NewRegion(memory[key : key+RegionSize])
-	realKey := memory[keyAddr.Offset : keyAddr.Offset+keyAddr.Length]
+
+	realKey := memory[keyPtr: keyPtr + keySize]
 
 	fmt.Printf("delete key [%s]\n", string(realKey))
 
 	delete(store, string(realKey))
-}
-
-//Region 内存指针
-type Region struct {
-	Offset   uint32
-	Capacity uint32
-	Length   uint32
-}
-
-func NewRegion(b []byte) Region {
-	var ret Region
-	bytesBuffer := bytes.NewBuffer(b)
-	_ = binary.Read(bytesBuffer, binary.LittleEndian, &ret.Offset)
-	_ = binary.Read(bytesBuffer, binary.LittleEndian, &ret.Capacity)
-	_ = binary.Read(bytesBuffer, binary.LittleEndian, &ret.Length)
-	return ret
-}
-
-func (region Region) ToBytes() []byte {
-	bytesBuffer := bytes.NewBuffer([]byte{})
-	_ = binary.Write(bytesBuffer, binary.LittleEndian, region.Offset)
-	_ = binary.Write(bytesBuffer, binary.LittleEndian, region.Capacity)
-	_ = binary.Write(bytesBuffer, binary.LittleEndian, region.Length)
-	return bytesBuffer.Bytes()
 }
