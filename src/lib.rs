@@ -47,7 +47,9 @@ pub fn invoke() {
             event(param.method, String::from("无效方法"));
         }
     }
-    runtime::ret("success".as_bytes())
+    runtime::ret(Ok(types::Response {
+        data: "success".as_bytes().iter().cloned().collect(),
+    }))
 }
 
 fn event(method: String, msg: String) {

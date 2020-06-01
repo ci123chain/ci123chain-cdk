@@ -40,6 +40,18 @@ impl Address {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct Response {
+    pub data: Vec<u8>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum ContractResult {
+    Ok(Response),
+    Err(String),
+}
+
 // #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 // pub struct Env {
 //     pub block: BlockInfo,

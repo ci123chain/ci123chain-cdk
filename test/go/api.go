@@ -92,5 +92,22 @@ func returnContract(context unsafe.Pointer, ptr, size int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
 
-	fmt.Println(string(memory[ptr: ptr + size]))
+	result := memory[ptr: ptr + size]
+
+	var resp RespW
+	err := json.Unmarshal(result, &resp)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fmt.Println(string(resp.Ok.Data))
+}
+
+type RespW struct {
+	Ok  RespN   `json:"ok"`
+	Err string 	`json:"err"`
+}
+
+type RespN struct {
+	Data []byte `json:"data"`
 }

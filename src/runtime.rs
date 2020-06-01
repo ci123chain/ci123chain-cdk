@@ -1,4 +1,5 @@
-use crate::types::{Address, Param};
+use crate::errors::Error;
+use crate::types::{Address, ContractResult, Param, Response};
 
 use serde::{Serialize, Serializer};
 use serde_json;
@@ -22,8 +23,17 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
-pub fn ret(raw: &[u8]) {
-    unsafe { return_contract(raw.as_ptr() as *const c_void, raw.len()) };
+pub fn ret(result: Result<Response, Error>) {
+    match result {
+        Ok(response) => {
+            let output = serde_json::to_vec(&ContractResult::Ok(response)).unwrap();
+            unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+        }
+        Err(err) => {
+            let output = serde_json::to_vec(&ContractResult::Err(err.to_string())).unwrap();
+            unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+        }
+    }
 }
 
 pub fn notify(event: &Event) {
