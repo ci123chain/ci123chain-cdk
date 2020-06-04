@@ -87,7 +87,7 @@ type Param struct {
 var inputData []byte
 
 func getBytes() []byte {
-	modulePath := "../../target/wasm32-unknown-unknown/debug/rust_sdk.wasm"
+	modulePath := "../../example/target/wasm32-unknown-unknown/debug/example.wasm"
 
 	res, err := wasm.ReadBytes(modulePath)
 	if err != nil {

@@ -1,5 +1,5 @@
 [package]
-name = "rust-sdk"
+name = "c123chain-cdk"
 version = "0.1.0"
 authors = ["tanhui <tanhui@corp-ci.com>"]
 edition = "2018"
