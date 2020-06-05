@@ -51,7 +51,7 @@ pub fn invoke() {
         data: "success".as_bytes().iter().cloned().collect(),
     }))
 }
-
+// subscribe 基础用法 query = "type.key = 'value'"
 fn event(method: String, msg: String) {
     let map = hashmap!("msg".to_string() => IString(msg));
     runtime::notify(&runtime::Event::new(method, map));
