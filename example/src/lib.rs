@@ -4,6 +4,7 @@ use cdk::hashmap;
 use cdk::runtime;
 use cdk::runtime::ItemValue::String as IString;
 use cdk::types::{Address, Response};
+use cdk::errors;
 
 #[no_mangle]
 pub fn invoke() {
@@ -44,7 +45,8 @@ pub fn invoke() {
             event(param.method, time_stamp.unwrap().to_string());
         }
         _ => {
-            event(param.method, String::from("无效方法"));
+            // 返回指定类型的Error
+            runtime::ret(Err(errors::Error::NotFound{kind: String::from("invoke method")}));
         }
     }
     runtime::ret(Ok(Response {
