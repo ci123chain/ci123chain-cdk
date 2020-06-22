@@ -1,12 +1,19 @@
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Clone, Default, PartialEq)]
+#[derive(Clone, Default, PartialEq)]
 pub struct Param {
     pub method: String,
     pub args: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Default, Debug, PartialEq)]
+impl Param {
+    pub(crate) fn from_slice(raw: &[u8]) -> Param {
+        Param {
+            method: String::from("ok"),
+            args: vec![], //TODO
+        }
+    }
+}
+
+#[derive(Clone, Default, Debug, PartialEq)]
 pub struct Address([u8; 20]);
 
 impl Address {
@@ -40,49 +47,19 @@ impl Address {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Response {
     pub data: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Debug, PartialEq)]
 pub enum ContractResult {
     Ok(Response),
     Err(String),
 }
 
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct Env {
-//     pub block: BlockInfo,
-//     pub message: MessageInfo,
-//     pub contract: ContractInfo,
-// }
-
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct BlockInfo {
-//     pub height: i64,
-//     // time is seconds since epoch begin (Jan. 1, 1970)
-//     pub time: i64,
-//     pub chain_id: String,
-// }
-
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct MessageInfo {
-//     pub signer: Addr,
-//     // go likes to return null for empty array, make sure we can parse it (use option)
-//     pub sent_funds: Option<Vec<Coin>>,
-// }
-
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct ContractInfo {
-//     pub address: Addr,
-//     // go likes to return null for empty array, make sure we can parse it (use option)
-//     pub balance: Option<Vec<Coin>>,
-// }
-
-// #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-// pub struct Coin {
-//     pub denom: String,
-//     pub amount: String,
-// }
+impl ContractResult {
+    pub(crate) fn to_vec(&self) -> Vec<u8> {
+        vec![] //TODO
+    }
+}

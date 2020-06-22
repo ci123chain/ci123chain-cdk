@@ -3,3 +3,10 @@
 [[package]]
 name = "c123chain-cdk"
 version = "0.1.0"
+
+[[package]]
+name = "example"
+version = "0.1.0"
+dependencies = [
+ "c123chain-cdk",
+]

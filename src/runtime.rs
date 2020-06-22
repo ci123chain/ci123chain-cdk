@@ -1,9 +1,6 @@
 use crate::errors::Error;
 use crate::types::{Address, ContractResult, Param, Response};
 
-use serde::{Serialize, Serializer};
-use serde_json;
-
 use std::collections::HashMap;
 use std::os::raw::c_void;
 
@@ -26,22 +23,21 @@ pub fn make_dependencies() -> Dependencies {
 pub fn ret(result: Result<Response, Error>) {
     match result {
         Ok(response) => {
-            let output = serde_json::to_vec(&ContractResult::Ok(response)).unwrap();
+            let output = ContractResult::Ok(response).to_vec();
             unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
         }
         Err(err) => {
-            let output = serde_json::to_vec(&ContractResult::Err(err.to_string())).unwrap();
+            let output = ContractResult::Err(err.to_string()).to_vec();
             unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
         }
     }
 }
 
 pub fn notify(event: &Event) {
-    let raw = serde_json::to_vec(event).unwrap();
+    let raw = event.to_vec();
     unsafe { notify_contract(raw.as_ptr() as *const c_void, raw.len()) };
 }
 
-#[derive(Serialize)]
 pub struct Event {
     pub r#type: String,
     pub attr: HashMap<String, ItemValue>,
@@ -54,23 +50,15 @@ impl Event {
             attr: attribute,
         }
     }
+
+    pub(crate) fn to_vec(&self) -> Vec<u8> {
+        vec![] //TODO
+    }
 }
 
 pub enum ItemValue {
     String(String),
     Int64(i64),
-}
-
-impl Serialize for ItemValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match &self {
-            ItemValue::String(value) => serializer.serialize_str(value),
-            ItemValue::Int64(value) => serializer.serialize_i64(*value),
-        }
-    }
 }
 
 pub struct Dependencies {
@@ -171,8 +159,7 @@ impl ExternalApi {
         let input: Vec<u8> = vec![0; size];
         let pointer = input.as_ptr();
         unsafe { get_input(pointer, size) };
-        let param: Param = serde_json::from_slice(&input.as_ref()).unwrap();
-        return param;
+        return Param::from_slice(input.as_ref());
     }
 
     pub fn send(&self, to: &Address, amount: i64) -> Result<i32, i32> {
@@ -228,72 +215,3 @@ extern "C" {
     fn get_invoker(invoker_ptr: *mut c_void);
     fn get_time() -> u64;
 }
-
-// /// Refers to some heap allocated data in Wasm.
-// /// A pointer to an instance of this can be returned over FFI boundaries.
-// ///
-// /// This struct is crate internal since the VM defined the same type independently.
-// #[repr(C)]
-// struct Region {
-//     offset: u32,
-//     /// The number of bytes available in this region
-//     capacity: u32,
-//     /// The number of bytes used in this region
-//     length: u32,
-// }
-
-// /// Return the data referenced by the Region and
-// /// deallocates the Region (and the vector when finished).
-// /// Warning: only use this when you are sure the caller will never use (or free) the Region later
-// ///
-// /// # Safety
-// ///
-// /// If ptr is non-nil, it must refer to a valid Region, which was previously returned by alloc,
-// /// and not yet deallocated. This call will deallocate the Region and return an owner vector
-// /// to the caller containing the referenced data.
-// ///
-// /// Naturally, calling this function twice on the same pointer will double deallocate data
-// /// and lead to a crash. Make sure to call it exactly once (either consuming the input in
-// /// the wasm code OR deallocating the buffer from the caller).
-// unsafe fn consume_region(ptr: *mut c_void) -> Result<Vec<u8>, Error> {
-//     if ptr.is_null() {
-//         return NullPointer {}.fail();
-//     }
-//     let region = Box::from_raw(ptr as *mut Region);
-//     let buffer = Vec::from_raw_parts(
-//         region.offset as *mut u8,
-//         region.length as usize,
-//         region.capacity as usize,
-//     );
-//     Ok(buffer)
-// }
-
-// /// Returns a box of a Region, which can be sent over a call to extern
-// /// note that this DOES NOT take ownership of the data, and we MUST NOT consume_region
-// /// the resulting data.
-// /// The Box must be dropped (with scope), but not the data
-// fn build_region(data: &[u8]) -> Box<Region> {
-//     let data_ptr = data.as_ptr() as usize;
-//     build_region_from_components(data_ptr as u32, data.len() as u32, data.len() as u32)
-// }
-
-// fn build_region_from_components(offset: u32, capacity: u32, length: u32) -> Box<Region> {
-//     Box::new(Region {
-//         offset,
-//         capacity,
-//         length,
-//     })
-// }
-
-// fn allocate(size: usize) -> *mut c_void {
-//     let mut buffer = Vec::with_capacity(size);
-//     let pointer = buffer.as_mut_ptr();
-//     mem::forget(buffer);
-//     pointer as *mut c_void
-// }
-
-// fn deallocate(pointer: *mut c_void, capacity: usize) {
-//     unsafe {
-//         let _ = Vec::from_raw_parts(pointer, 0, capacity);
-//     }
-// }

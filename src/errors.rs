@@ -1,57 +1,37 @@
-use snafu::Snafu;
+use std::string::ToString;
 
-#[derive(Debug, Snafu)]
-#[snafu(visibility = "pub")]
+#[derive(Debug)]
 pub enum Error {
-    #[snafu(display("Contract error: {}", msg))]
     ContractErr {
         msg: &'static str,
-        // #[cfg(feature = "backtraces")]
-        // backtrace: snafu::Backtrace,
     },
-    #[snafu(display("{} not found", kind))]
     NotFound {
         kind: String,
-        // #[cfg(feature = "backtraces")]
-        // backtrace: snafu::Backtrace,
     },
-    #[snafu(display("Error parsing {}", kind))]
     ParseErr {
         kind: String,
-        // #[cfg(feature = "backtraces")]
-        // backtrace: snafu::Backtrace,
     },
-    #[snafu(display("Error serializing {}", kind))]
     SerializeErr {
         kind: String,
-        // #[cfg(feature = "backtraces")]
-        // backtrace: snafu::Backtrace,
     },
-    #[snafu(display("Invalid {}: {}", field, msg))]
     ValidationErr {
         field: &'static str,
         msg: &'static str,
-        // #[cfg(feature = "backtraces")]
-        // backtrace: snafu::Backtrace,
     },
-    #[snafu(display("Received null pointer, refuse to use"))]
     NullPointer {},
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Error {
-        Error::ParseErr {
-            kind: err.to_string(),
+impl ToString for Error {
+    fn to_string(&self) -> String {
+        match self {
+            Error::ContractErr { msg: e } => format!("Contract error: {}", e),
+            Error::NotFound { kind: e } => format!("{} not found", e),
+            Error::ParseErr { kind: e } => format!("Error parsing {}", e),
+            Error::SerializeErr { kind: e } => format!("Error serializing {}", e),
+            Error::ValidationErr { field: f, msg: e } => format!("Invalid {}: {}", f, e),
+            Error::NullPointer {} => format!("Received null pointer, refuse to use"),
         }
     }
 }
 
 pub type Result<T, E = Error> = core::result::Result<T, E>;
-
-pub fn contract_err<T>(msg: &'static str) -> Result<T> {
-    ContractErr{ msg }.fail()
-}
-
-pub fn invalid<T>(field: &'static str, msg: &'static str) -> Result<T> {
-    ValidationErr{ field, msg }.fail()
-}
