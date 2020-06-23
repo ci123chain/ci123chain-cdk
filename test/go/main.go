@@ -17,8 +17,8 @@ package main
 // extern void return_contract(void*, int, int);
 import "C"
 import (
-	"encoding/json"
 	"fmt"
+	"unicode/utf8"
 	"unsafe"
 
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
@@ -82,6 +82,27 @@ func return_contract(context unsafe.Pointer, ptr, size int32) {
 type Param struct {
 	Method string   `json:"method"`
 	Args   []string `json:"args"`
+}
+
+func (param Param) Serialize() []byte {
+	// 参数必须是合法的UTF8字符串
+	if !utf8.ValidString(param.Method) {
+		panic("invalid string")
+	}
+	for i := range param.Args {
+		if !utf8.ValidString(param.Args[i]) {
+			panic("invalid string")
+		}
+	}
+
+	sink := NewSink([]byte{})
+	sink.WriteString(param.Method)
+	sink.WriteU32(uint32(len(param.Args)))
+	for i := range param.Args {
+		sink.WriteString(param.Args[i])
+	}
+
+	return sink.Bytes()
 }
 
 var inputData []byte
@@ -162,7 +183,7 @@ func ontologyContract() {
 
 	for _, param := range params {
 		fmt.Printf("\n==============================\ncall %s\n", param.Method)
-		inputData, _ = json.Marshal(param)
+		inputData = param.Serialize()
 		_, err = invoke()
 		if err != nil {
 			panic(err)

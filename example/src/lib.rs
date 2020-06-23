@@ -1,10 +1,10 @@
 extern crate c123chain_cdk as cdk;
 
+use cdk::errors;
 use cdk::hashmap;
 use cdk::runtime;
 use cdk::runtime::ItemValue::String as IString;
 use cdk::types::{Address, Response};
-use cdk::errors;
 
 #[no_mangle]
 pub fn invoke() {
@@ -46,17 +46,21 @@ pub fn invoke() {
         }
         _ => {
             // 返回指定类型的Error
-            runtime::ret(Err(errors::Error::NotFound{kind: String::from("invoke method")}));
+            deps.api.ret(Err(errors::Error::NotFound {
+                kind: String::from("invoke method"),
+            }));
         }
     }
-    runtime::ret(Ok(Response {
+    deps.api.ret(Ok(Response {
         data: "success".as_bytes().iter().cloned().collect(),
     }))
 }
 // subscribe 基础用法 query = "type.key = 'value'"
 fn event(method: String, msg: String) {
     let map = hashmap!("msg".to_string() => IString(msg));
-    runtime::notify(&runtime::Event::new(method, map));
+    runtime::make_dependencies()
+        .api
+        .notify(&runtime::Event::new(method, map));
 }
 
 fn read_db(key: &str) -> String {

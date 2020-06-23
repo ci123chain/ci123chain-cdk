@@ -1,3 +1,5 @@
+use crate::codec::{Sink, Source};
+
 #[derive(Clone, Default, PartialEq)]
 pub struct Param {
     pub method: String,
@@ -6,9 +8,18 @@ pub struct Param {
 
 impl Param {
     pub(crate) fn from_slice(raw: &[u8]) -> Param {
+        // [method, num of args, args...]
+        // [string, u32,         string...]
+        let mut source = Source::new(raw);
+        let method = source.read_string();
+        let num = source.read_u32();
+        let mut args = vec![];
+        for _ in 0..num {
+            args.push(source.read_string());
+        }
         Param {
-            method: String::from("ok"),
-            args: vec![], //TODO
+            method: method,
+            args: args,
         }
     }
 }
@@ -23,6 +34,14 @@ impl Address {
 
     pub fn zero() -> Address {
         Address([0; 20])
+    }
+
+    pub fn into(&self) -> [u8; 20] {
+        self.0
+    }
+
+    pub fn into_slice(&self) -> &[u8] {
+        &self.0[..]
     }
 
     pub fn to_hex_string(&self) -> String {
@@ -60,6 +79,22 @@ pub enum ContractResult {
 
 impl ContractResult {
     pub(crate) fn to_vec(&self) -> Vec<u8> {
-        vec![] //TODO
+        // [ok or error, size of data, data]
+        // [bool,        usize,        bytes]
+        let mut sink = Sink::new(0);
+        match self {
+            ContractResult::Ok(resp) => {
+                sink.write_bool(true);
+                sink.write_usize(resp.data.len());
+                sink.write_bytes(&resp.data);
+                sink.into()
+            }
+            ContractResult::Err(err) => {
+                sink.write_bool(false);
+                sink.write_usize(err.len());
+                sink.write_bytes(err.as_bytes());
+                sink.into()
+            }
+        }
     }
 }

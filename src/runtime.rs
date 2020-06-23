@@ -1,3 +1,4 @@
+use crate::codec::Sink;
 use crate::errors::Error;
 use crate::types::{Address, ContractResult, Param, Response};
 
@@ -20,24 +21,6 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
-pub fn ret(result: Result<Response, Error>) {
-    match result {
-        Ok(response) => {
-            let output = ContractResult::Ok(response).to_vec();
-            unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
-        }
-        Err(err) => {
-            let output = ContractResult::Err(err.to_string()).to_vec();
-            unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
-        }
-    }
-}
-
-pub fn notify(event: &Event) {
-    let raw = event.to_vec();
-    unsafe { notify_contract(raw.as_ptr() as *const c_void, raw.len()) };
-}
-
 pub struct Event {
     pub r#type: String,
     pub attr: HashMap<String, ItemValue>,
@@ -52,7 +35,25 @@ impl Event {
     }
 
     pub(crate) fn to_vec(&self) -> Vec<u8> {
-        vec![] //TODO
+        // [type,   size of map, [key,    type of value, value    ]...]
+        // [string, usize,       [string, byte,          ItemValue]...]
+        let mut sink = Sink::new(0);
+        sink.write_string(&self.r#type);
+        sink.write_usize(self.attr.len());
+        for (k, v) in self.attr.iter() {
+            sink.write_string(k);
+            match v {
+                ItemValue::Int64(i) => {
+                    sink.write_byte(0);
+                    sink.write_i64(*i);
+                }
+                ItemValue::String(s) => {
+                    sink.write_byte(1);
+                    sink.write_string(s);
+                }
+            }
+        }
+        sink.into()
     }
 }
 
@@ -186,6 +187,24 @@ impl ExternalApi {
     pub fn get_timestamp(&self) -> Option<u64> {
         let data = unsafe { get_time() };
         Some(data)
+    }
+
+    pub fn ret(&self, result: Result<Response, Error>) {
+        match result {
+            Ok(response) => {
+                let output = ContractResult::Ok(response).to_vec();
+                unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+            }
+            Err(err) => {
+                let output = ContractResult::Err(err.to_string()).to_vec();
+                unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+            }
+        }
+    }
+
+    pub fn notify(&self, event: &Event) {
+        let raw = event.to_vec();
+        unsafe { notify_contract(raw.as_ptr() as *const c_void, raw.len()) };
     }
 }
 
