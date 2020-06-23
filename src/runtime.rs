@@ -206,6 +206,14 @@ impl ExternalApi {
         let raw = event.to_vec();
         unsafe { notify_contract(raw.as_ptr() as *const c_void, raw.len()) };
     }
+
+    pub fn call_contract(&self, addr: &Address, param: &Param) -> bool {
+        let addr_ptr = addr.as_ptr() as *const c_void;
+        let raw_param = param.to_vec();
+        let size = raw_param.len();
+        let param_ptr = raw_param.as_ptr() as *const c_void;
+        unsafe { call_contract(addr_ptr, param_ptr, size) }
+    }
 }
 
 // This interface will compile into required Wasm imports.
@@ -233,4 +241,5 @@ extern "C" {
     fn get_creator(creator_ptr: *mut c_void);
     fn get_invoker(invoker_ptr: *mut c_void);
     fn get_time() -> u64;
+    fn call_contract(addr_ptr: *const c_void, param_ptr: *const c_void, param_size: usize) -> bool;
 }

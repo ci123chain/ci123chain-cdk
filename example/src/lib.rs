@@ -4,7 +4,7 @@ use cdk::errors;
 use cdk::hashmap;
 use cdk::runtime;
 use cdk::runtime::ItemValue::String as IString;
-use cdk::types::{Address, Response};
+use cdk::types::{Address, Param, Response};
 
 #[no_mangle]
 pub fn invoke() {
@@ -43,6 +43,18 @@ pub fn invoke() {
         "get_time" => {
             let time_stamp = deps.api.get_timestamp();
             event(param.method, time_stamp.unwrap().to_string());
+        }
+        "call_contract" => {
+            let mut addr = [0; 20];
+            for i in 0..20 {
+                addr[i] = param.args[0].as_bytes()[i];
+            }
+            let ret_param = Param {
+                method: param.args[1].clone(),
+                args: vec![param.args[2].clone()],
+            };
+            let res = deps.api.call_contract(&Address::new(&addr), &ret_param);
+            event(param.method, res.to_string());
         }
         _ => {
             // 返回指定类型的Error

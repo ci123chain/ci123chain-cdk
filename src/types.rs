@@ -22,6 +22,16 @@ impl Param {
             args: args,
         }
     }
+
+    pub(crate) fn to_vec(&self) -> Vec<u8> {
+        let mut sink = Sink::new(0);
+        sink.write_string(&self.method);
+        sink.write_usize(self.args.len());
+        for i in 0..self.args.len() {
+            sink.write_string(&self.args[i]);
+        }
+        sink.into()
+    }
 }
 
 #[derive(Clone, Default, Debug, PartialEq)]

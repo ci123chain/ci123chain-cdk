@@ -15,10 +15,10 @@ package main
 // extern void get_input(void*, int, int);
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
+// extern int call_contract(void*, int, int, int);
 import "C"
 import (
 	"fmt"
-	"unicode/utf8"
 	"unsafe"
 
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
@@ -79,30 +79,9 @@ func return_contract(context unsafe.Pointer, ptr, size int32) {
 	returnContract(context, ptr, size)
 }
 
-type Param struct {
-	Method string   `json:"method"`
-	Args   []string `json:"args"`
-}
-
-func (param Param) Serialize() []byte {
-	// 参数必须是合法的UTF8字符串
-	if !utf8.ValidString(param.Method) {
-		panic("invalid string")
-	}
-	for i := range param.Args {
-		if !utf8.ValidString(param.Args[i]) {
-			panic("invalid string")
-		}
-	}
-
-	sink := NewSink([]byte{})
-	sink.WriteString(param.Method)
-	sink.WriteU32(uint32(len(param.Args)))
-	for i := range param.Args {
-		sink.WriteString(param.Args[i])
-	}
-
-	return sink.Bytes()
+//export call_contract
+func call_contract(context unsafe.Pointer, addrPtr, paramPtr, paramSize int32) int32 {
+	return callContract(context, addrPtr, paramPtr, paramSize)
 }
 
 var inputData []byte
@@ -136,6 +115,7 @@ func ontologyContract() {
 	_, _ = imports.Append("get_input", get_input, C.get_input)
 	_, _ = imports.Append("return_contract", return_contract, C.return_contract)
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
+	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
 
 	module, err := wasm.Compile(getBytes())
 	if err != nil {
@@ -173,10 +153,13 @@ func ontologyContract() {
 	}, {
 		Method: "get_invoker",
 		Args:   []string{},
-	},{
+	}, {
 		Method: "get_time",
 		Args:   []string{},
-	},{
+	}, {
+		Method: "call_contract",
+		Args:   []string{"contract000000000000", "call_method", "call_args"},
+	}, {
 		Method: "这是一个无效的方法",
 		Args:   []string{},
 	}}
