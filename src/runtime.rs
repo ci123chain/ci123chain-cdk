@@ -67,7 +67,6 @@ pub struct Dependencies {
     pub api: ExternalApi,
 }
 
-#[derive(Debug)]
 pub struct Store {
     prefix: String,
 }
@@ -78,18 +77,16 @@ impl Store {
             prefix: "test-".to_string(),
         }
     }
-}
 
-impl Store {
-    pub fn set(&mut self, key: &[u8], value: &[u8]) {
+    pub fn set(&self, key: &[u8], value: &[u8]) {
         let mut prefix = self.prefix.clone();
         let real_key = unsafe { prefix.as_mut_vec() };
         for &ele in key {
             real_key.push(ele);
         }
 
-        let key_ptr = key.as_ptr() as *const c_void;
-        let key_size = key.len();
+        let key_ptr = real_key.as_ptr() as *const c_void;
+        let key_size = real_key.len();
 
         let value_ptr = value.as_ptr() as *const c_void;
         let value_size = value.len();
@@ -152,9 +149,7 @@ impl ExternalApi {
     fn new() -> ExternalApi {
         ExternalApi {}
     }
-}
 
-impl ExternalApi {
     pub fn input(&self) -> Param {
         let size = unsafe { get_input_length() };
         let input: Vec<u8> = vec![0; size];

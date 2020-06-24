@@ -140,10 +140,10 @@ func ontologyContract() {
 		Args:   []string{"time", "机器"},
 	}, {
 		Method: "read_db",
-		Args:   []string{"time"},
+		Args:   []string{"test-time"}, // 合约中加了前缀 test-
 	}, {
 		Method: "delete_db",
-		Args:   []string{"time"},
+		Args:   []string{"test-time"},
 	}, {
 		Method: "send",
 		Args:   []string{"user0000000000000000", "7"},

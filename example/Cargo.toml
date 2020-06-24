@@ -10,3 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 c123chain-cdk = {path="../"}
+
+[profile.release]
+opt-level = "s"
+lto = true
