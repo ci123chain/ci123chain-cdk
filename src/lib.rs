@@ -1,5 +1,3 @@
-#![no_std]
-
 pub mod codec;
 pub mod errors;
 pub mod runtime;
@@ -9,7 +7,6 @@ pub mod types;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 extern crate alloc;
-extern crate std;
 pub mod prelude {
     pub use alloc::boxed::Box;
     pub use alloc::str;
