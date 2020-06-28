@@ -87,7 +87,7 @@ func call_contract(context unsafe.Pointer, addrPtr, paramPtr, paramSize int32) i
 var inputData []byte
 
 func getBytes() []byte {
-	modulePath := "../../example/target/wasm32-unknown-unknown/debug/example.wasm"
+	modulePath := "../../example/target/example.wasm"
 
 	res, err := wasm.ReadBytes(modulePath)
 	if err != nil {
