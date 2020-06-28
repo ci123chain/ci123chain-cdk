@@ -1,4 +1,4 @@
-use crate::prelude::{format, String, ToString};
+use crate::prelude::{String, ToString};
 
 #[derive(Debug)]
 pub enum Error {
@@ -6,13 +6,13 @@ pub enum Error {
         msg: &'static str,
     },
     NotFound {
-        kind: String,
+        msg: &'static str,
     },
     ParseErr {
-        kind: String,
+        msg: &'static str,
     },
     SerializeErr {
-        kind: String,
+        msg: &'static str,
     },
     ValidationErr {
         field: &'static str,
@@ -24,14 +24,12 @@ pub enum Error {
 impl ToString for Error {
     fn to_string(&self) -> String {
         match self {
-            Error::ContractErr { msg: e } => format!("Contract error: {}", e),
-            Error::NotFound { kind: e } => format!("{} not found", e),
-            Error::ParseErr { kind: e } => format!("Error parsing {}", e),
-            Error::SerializeErr { kind: e } => format!("Error serializing {}", e),
-            Error::ValidationErr { field: f, msg: e } => format!("Invalid {}: {}", f, e),
-            Error::NullPointer {} => format!("Received null pointer, refuse to use"),
+            Error::ContractErr { msg: m } => "Contract error: ".to_string() + m,
+            Error::NotFound { msg: m } => m.to_string() + " not found",
+            Error::ParseErr { msg: m } => "Error parsing ".to_string() + m,
+            Error::SerializeErr { msg: m } => "Error serializing ".to_string() + m,
+            Error::ValidationErr { field: f, msg: m } => "Invalid ".to_string() + f + ": " + m,
+            Error::NullPointer {} => "Received null pointer, refuse to use".to_string(),
         }
     }
 }
-
-pub type Result<T, E = Error> = core::result::Result<T, E>;

@@ -58,7 +58,7 @@ pub fn invoke() {
         _ => {
             // 返回指定类型的Error
             deps.api.ret(Err(errors::Error::NotFound {
-                kind: String::from("invoke method"),
+                msg: "invoke method",
             }));
         }
     }
