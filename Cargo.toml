@@ -8,3 +8,10 @@ edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wee_alloc = "0.4.5"
+
+[profile.release]
+opt-level = "s"
+lto = true

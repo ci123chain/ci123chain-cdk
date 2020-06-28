@@ -2,17 +2,7 @@ use crate::codec::Sink;
 use crate::errors::Error;
 use crate::types::{Address, ContractResult, Param, Response};
 
-use std::collections::HashMap;
-use std::os::raw::c_void;
-
-#[macro_export]
-macro_rules! hashmap {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map = ::std::collections::HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
-}
+use crate::prelude::{vec, String, ToString, Vec};
 
 pub fn make_dependencies() -> Dependencies {
     Dependencies {
@@ -23,20 +13,24 @@ pub fn make_dependencies() -> Dependencies {
 
 pub struct Event {
     pub r#type: String,
-    pub attr: HashMap<String, ItemValue>,
+    pub attr: Vec<(String, ItemValue)>,
 }
 
 impl Event {
-    pub fn new(event_type: String, attribute: HashMap<String, ItemValue>) -> Event {
+    pub fn new(event_type: String) -> Event {
         Event {
             r#type: event_type,
-            attr: attribute,
+            attr: vec![],
         }
     }
 
+    pub fn add(&mut self, key: String, value: ItemValue) {
+        self.attr.push((key, value));
+    }
+
     pub(crate) fn to_vec(&self) -> Vec<u8> {
-        // [type,   size of map, [key,    type of value, value    ]...]
-        // [string, usize,       [string, byte,          ItemValue]...]
+        // [type,   size of attr, [key,    type of value, value    ]...]
+        // [string, usize,        [string, byte,          ItemValue]...]
         let mut sink = Sink::new(0);
         sink.write_string(&self.r#type);
         sink.write_usize(self.attr.len());
@@ -85,10 +79,10 @@ impl Store {
             real_key.push(ele);
         }
 
-        let key_ptr = real_key.as_ptr() as *const c_void;
+        let key_ptr = real_key.as_ptr();
         let key_size = real_key.len();
 
-        let value_ptr = value.as_ptr() as *const c_void;
+        let value_ptr = value.as_ptr();
         let value_size = value.len();
         unsafe {
             write_db(key_ptr, key_size, value_ptr, value_size);
@@ -104,10 +98,10 @@ impl Store {
             real_key.push(ele);
         }
 
-        let key_ptr = key.as_ptr() as *const c_void;
+        let key_ptr = key.as_ptr();
         let key_size = key.len();
 
-        let value_ptr = real_value.as_mut_ptr() as *mut c_void;
+        let value_ptr = real_value.as_mut_ptr();
         let value_size = real_value.len();
 
         let size = unsafe { read_db(key_ptr, key_size, value_ptr, value_size, 0) } as usize;
@@ -115,15 +109,7 @@ impl Store {
         real_value.resize(size, 0);
         if size > INITIAL {
             let value = &mut real_value[INITIAL..];
-            unsafe {
-                read_db(
-                    key_ptr,
-                    key_size,
-                    value.as_mut_ptr() as *mut c_void,
-                    value.len(),
-                    INITIAL,
-                )
-            };
+            unsafe { read_db(key_ptr, key_size, value.as_mut_ptr(), value.len(), INITIAL) };
         }
 
         Some(real_value)
@@ -135,7 +121,7 @@ impl Store {
         for &ele in key {
             real_key.push(ele);
         }
-        let key_ptr = key.as_ptr() as *const c_void;
+        let key_ptr = key.as_ptr();
         let key_size = key.len();
         unsafe {
             delete_db(key_ptr, key_size);
@@ -159,7 +145,7 @@ impl ExternalApi {
     }
 
     pub fn send(&self, to: &Address, amount: i64) -> Result<i32, i32> {
-        let res = unsafe { send(to.as_ptr() as *const c_void, amount) };
+        let res = unsafe { send(to.as_ptr(), amount) };
         if res == 0 {
             Ok(0)
         } else {
@@ -169,13 +155,13 @@ impl ExternalApi {
 
     pub fn get_creator(&self) -> Address {
         let creator = Address::zero();
-        unsafe { get_creator(creator.as_ptr() as *mut c_void) };
+        unsafe { get_creator(creator.as_ptr() as *mut u8) };
         creator
     }
 
     pub fn get_invoker(&self) -> Address {
         let invoker = Address::zero();
-        unsafe { get_invoker(invoker.as_ptr() as *mut c_void) };
+        unsafe { get_invoker(invoker.as_ptr() as *mut u8) };
         invoker
     }
 
@@ -188,25 +174,25 @@ impl ExternalApi {
         match result {
             Ok(response) => {
                 let output = ContractResult::Ok(response).to_vec();
-                unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+                unsafe { return_contract(output.as_ptr(), output.len()) };
             }
             Err(err) => {
                 let output = ContractResult::Err(err.to_string()).to_vec();
-                unsafe { return_contract(output.as_ptr() as *const c_void, output.len()) };
+                unsafe { return_contract(output.as_ptr(), output.len()) };
             }
         }
     }
 
     pub fn notify(&self, event: &Event) {
         let raw = event.to_vec();
-        unsafe { notify_contract(raw.as_ptr() as *const c_void, raw.len()) };
+        unsafe { notify_contract(raw.as_ptr(), raw.len()) };
     }
 
     pub fn call_contract(&self, addr: &Address, param: &Param) -> bool {
-        let addr_ptr = addr.as_ptr() as *const c_void;
+        let addr_ptr = addr.as_ptr();
         let raw_param = param.to_vec();
         let size = raw_param.len();
-        let param_ptr = raw_param.as_ptr() as *const c_void;
+        let param_ptr = raw_param.as_ptr();
         unsafe { call_contract(addr_ptr, param_ptr, size) }
     }
 }
@@ -215,26 +201,21 @@ impl ExternalApi {
 extern "C" {
     fn get_input_length() -> usize;
     fn get_input(method: *const u8, size: usize);
-    fn notify_contract(msg: *const c_void, msg_size: usize);
-    fn return_contract(value: *const c_void, value_size: usize);
+    fn notify_contract(msg: *const u8, msg_size: usize);
+    fn return_contract(value: *const u8, value_size: usize);
 
     fn read_db(
-        key_ptr: *const c_void,
+        key_ptr: *const u8,
         key_size: usize,
-        value_ptr: *mut c_void,
+        value_ptr: *mut u8,
         value_size: usize,
         offset: usize,
     ) -> i32;
-    fn write_db(
-        key_ptr: *const c_void,
-        key_size: usize,
-        value_ptr: *const c_void,
-        value_size: usize,
-    );
-    fn delete_db(key_ptr: *const c_void, key_size: usize);
-    fn send(to_ptr: *const c_void, amount: i64) -> i32;
-    fn get_creator(creator_ptr: *mut c_void);
-    fn get_invoker(invoker_ptr: *mut c_void);
+    fn write_db(key_ptr: *const u8, key_size: usize, value_ptr: *const u8, value_size: usize);
+    fn delete_db(key_ptr: *const u8, key_size: usize);
+    fn send(to_ptr: *const u8, amount: i64) -> i32;
+    fn get_creator(creator_ptr: *mut u8);
+    fn get_invoker(invoker_ptr: *mut u8);
     fn get_time() -> u64;
-    fn call_contract(addr_ptr: *const c_void, param_ptr: *const c_void, param_size: usize) -> bool;
+    fn call_contract(addr_ptr: *const u8, param_ptr: *const u8, param_size: usize) -> bool;
 }

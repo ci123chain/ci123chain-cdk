@@ -1,4 +1,4 @@
-use std::string::ToString;
+use crate::prelude::{format, String, ToString};
 
 #[derive(Debug)]
 pub enum Error {

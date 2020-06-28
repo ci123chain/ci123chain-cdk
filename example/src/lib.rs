@@ -1,7 +1,6 @@
 extern crate c123chain_cdk as cdk;
 
 use cdk::errors;
-use cdk::hashmap;
 use cdk::runtime;
 use cdk::runtime::ItemValue::String as IString;
 use cdk::types::{Address, Param, Response};
@@ -67,12 +66,12 @@ pub fn invoke() {
         data: "success".as_bytes().iter().cloned().collect(),
     }))
 }
+
 // subscribe 基础用法 query = "type.key = 'value'"
 fn event(method: String, msg: String) {
-    let map = hashmap!("msg".to_string() => IString(msg));
-    runtime::make_dependencies()
-        .api
-        .notify(&runtime::Event::new(method, map));
+    let mut event = runtime::Event::new(method);
+    event.add("msg".to_string(), IString(msg));
+    runtime::make_dependencies().api.notify(&event);
 }
 
 fn read_db(key: &str) -> String {

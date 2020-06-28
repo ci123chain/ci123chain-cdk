@@ -1,5 +1,7 @@
 use crate::codec::{Sink, Source};
 
+use crate::prelude::{vec, String, Vec};
+
 #[derive(Clone, Default, PartialEq)]
 pub struct Param {
     pub method: String,

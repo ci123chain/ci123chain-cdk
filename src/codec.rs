@@ -1,6 +1,6 @@
 use crate::types::Address;
 
-use std::convert::AsMut;
+use crate::prelude::{String, Vec};
 
 pub struct Sink {
     buf: Vec<u8>,
