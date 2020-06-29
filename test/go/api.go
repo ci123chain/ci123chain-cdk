@@ -5,67 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"unicode/utf8"
 	"unsafe"
 
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
 )
 
-type Param struct {
-	Method string   `json:"method"`
-	Args   []string `json:"args"`
-}
-
-func NewParamFromSlice(raw []byte) (Param, error) {
-	var param Param
-
-	sink := NewSink(raw)
-	method, err := sink.ReadString()
-	if err != nil {
-		return param, err
-	}
-	param.Method = method
-
-	size, err := sink.ReadU32()
-	if err != nil {
-		return param, err
-	}
-
-	for i := 0; i < int(size); i++ {
-		arg, err := sink.ReadString()
-		if err != nil {
-			return param, err
-		}
-		param.Args = append(param.Args, arg)
-	}
-
-	return param, nil
-}
-
-func (param Param) Serialize() []byte {
-	// 参数必须是合法的UTF8字符串
-	if !utf8.ValidString(param.Method) {
-		panic("invalid string")
-	}
-	for i := range param.Args {
-		if !utf8.ValidString(param.Args[i]) {
-			panic("invalid string")
-		}
-	}
-
-	sink := NewSink([]byte{})
-	sink.WriteString(param.Method)
-	sink.WriteU32(uint32(len(param.Args)))
-	for i := range param.Args {
-		sink.WriteString(param.Args[i])
-	}
-
-	return sink.Bytes()
-}
-
 const AddressSize = 20
 
 type Address [AddressSize]byte
+
+func NewAddress(raw []byte) (addr Address) {
+	if len(raw) != AddressSize {
+		panic("mismatch size")
+	}
+
+	copy(addr[:], raw)
+	return
+}
 
 func (addr *Address) ToString() string {
 	return hex.EncodeToString(addr[:])
@@ -127,8 +83,8 @@ func NewEventFromSlice(raw []byte) (Event, error) {
 	return event, nil
 }
 
-func getInputLength(context unsafe.Pointer) int32 {
-	return int32(len([]byte(inputData)))
+func getInputLength(_ unsafe.Pointer) int32 {
+	return int32(len(inputData))
 }
 
 func getInput(context unsafe.Pointer, ptr int32, size int32) {
@@ -152,7 +108,7 @@ func performSend(context unsafe.Pointer, to int32, amount int64) int32 {
 	//if err != nil {
 	//	return 1
 	//}
-	return 0
+	return 1 // 1 代表 bool true
 }
 
 func getCreator(context unsafe.Pointer, CreatorPtr int32) {
@@ -175,7 +131,7 @@ func getInvoker(context unsafe.Pointer, invokerPtr int32) {
 	copy(memory[invokerPtr:invokerPtr+AddressSize], creatorAddr[:])
 }
 
-func getTime(context unsafe.Pointer) int64 {
+func getTime(_ unsafe.Pointer) int64 {
 	now := time.Now() //blockHeader.Time
 	return now.Unix()
 }
@@ -220,21 +176,18 @@ func returnContract(context unsafe.Pointer, ptr, size int32) {
 	}
 }
 
-func callContract(context unsafe.Pointer, addrPtr, paramPtr, paramSize int32) int32 {
+func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) int32 {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
 
 	var addr Address
 	copy(addr[:], memory[addrPtr: addrPtr + AddressSize])
 
-	param, err := NewParamFromSlice(memory[paramPtr: paramPtr+ paramSize])
-	if err != nil {
-		fmt.Println(err)
-	}
+	input := memory[inputPtr: inputPtr+ inputSize]
 
 	fmt.Println("call contract: " + addr.ToString())
 	fmt.Print("call param: ")
-	fmt.Println(param)
+	fmt.Println(input)
 
 	return 1
 }

@@ -1,42 +1,42 @@
 extern crate c123chain_cdk as cdk;
 
-use cdk::errors;
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
-use cdk::types::{Address, Param, Response};
+use cdk::types::Response;
 
 #[no_mangle]
 pub fn invoke() {
     let deps = runtime::make_dependencies();
-    let param = deps.api.input();
-    match param.method.as_str() {
+    let mut input = deps.api.input();
+    let method = input.read_str().unwrap();
+    match method {
         "read_db" => {
+            let key = input.read_str().unwrap();
             return_contract(Ok(Response {
-                data: read_db(&param.args[0]).into_bytes(),
+                data: read_db(key).into_bytes(),
             }));
         }
         "write_db" => {
-            write_db(param.args[0].as_str(), param.args[1].as_str());
+            let key = input.read_str().unwrap().to_owned();
+            let value = input.read_str().unwrap();
+            write_db(&key, value);
             return_contract(Ok(Response {
                 data: "success".as_bytes().iter().cloned().collect(),
             }));
         }
         "delete_db" => {
-            delete_db(param.args[0].as_str());
+            let key = input.read_str().unwrap();
+            delete_db(key);
             return_contract(Ok(Response {
                 data: "success".as_bytes().iter().cloned().collect(),
             }));
         }
         "send" => {
-            let mut addr = [0; 20];
-            for i in 0..20 {
-                addr[i] = param.args[0].as_bytes()[i];
-            }
-            let res = deps
-                .api
-                .send(&Address::new(&addr), param.args[1].parse().unwrap());
+            let addr = input.read_address().unwrap();
+            let amount = input.read_u64().unwrap();
+            let res = deps.api.send(&addr, amount);
             return_contract(Ok(Response {
-                data: res.unwrap().to_string().into_bytes(),
+                data: res.to_string().into_bytes(),
             }));
         }
         "get_creator" => {
@@ -54,19 +54,14 @@ pub fn invoke() {
         "get_time" => {
             let time_stamp = deps.api.get_timestamp();
             return_contract(Ok(Response {
-                data: time_stamp.unwrap().to_string().into_bytes(),
+                data: time_stamp.to_string().into_bytes(),
             }));
         }
         "call_contract" => {
-            let mut addr = [0; 20];
-            for i in 0..20 {
-                addr[i] = param.args[0].as_bytes()[i];
-            }
-            let ret_param = Param {
-                method: param.args[1].clone(),
-                args: vec![param.args[2].clone()],
-            };
-            let res = deps.api.call_contract(&Address::new(&addr), &ret_param);
+            let addr = input.read_address().unwrap();
+            let input_size = input.read_usize().unwrap();
+            let ret_input = input.read_bytes(input_size).unwrap();
+            let res = deps.api.call_contract(&addr, &ret_input);
             return_contract(Ok(Response {
                 data: res.to_string().into_bytes(),
             }));
@@ -79,7 +74,7 @@ pub fn invoke() {
         }
         _ => {
             // 返回Error
-            return_contract(Err(errors::Error("invoke method not found".to_string())));
+            return_contract(Err("invoke method not found".to_string()));
         }
     }
 }
@@ -109,6 +104,6 @@ fn delete_db(key: &str) {
     runtime::make_dependencies().storage.delete(key.as_bytes())
 }
 
-fn return_contract(result: Result<Response, errors::Error>) {
+fn return_contract(result: Result<Response, String>) {
     runtime::make_dependencies().api.ret(result)
 }

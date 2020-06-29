@@ -1,8 +1,7 @@
-use crate::codec::Sink;
-use crate::errors::Error;
-use crate::types::{Address, ContractResult, Param, Response};
+use crate::codec::{Sink, Source};
+use crate::types::{Address, ContractResult, Response};
 
-use crate::prelude::{vec, ToString, Vec};
+use crate::prelude::{vec, Vec};
 
 pub fn make_dependencies() -> Dependencies {
     Dependencies {
@@ -32,10 +31,10 @@ impl Event {
         // [type,   size of attr, [key,    type of value, value    ]...]
         // [string, usize,        [string, byte,          ItemValue]...]
         let mut sink = Sink::new(0);
-        sink.write_string(&self.r#type);
+        sink.write_str(&self.r#type);
         sink.write_usize(self.attr.len());
         for (k, v) in self.attr.iter() {
-            sink.write_string(k);
+            sink.write_str(k);
             match v {
                 ItemValue::Int64(i) => {
                     sink.write_byte(0);
@@ -43,7 +42,7 @@ impl Event {
                 }
                 ItemValue::Str(s) => {
                     sink.write_byte(1);
-                    sink.write_string(s);
+                    sink.write_str(s);
                 }
             }
         }
@@ -132,21 +131,16 @@ impl ExternalApi {
         ExternalApi {}
     }
 
-    pub fn input(&self) -> Param {
+    pub fn input(&self) -> Source {
         let size = unsafe { get_input_length() };
         let input: Vec<u8> = vec![0; size];
         let pointer = input.as_ptr();
         unsafe { get_input(pointer, size) };
-        return Param::from_slice(input.as_ref());
+        Source::new(input)
     }
 
-    pub fn send(&self, to: &Address, amount: i64) -> Result<i32, i32> {
-        let res = unsafe { send(to.as_ptr(), amount) };
-        if res == 0 {
-            Ok(0)
-        } else {
-            Err(1)
-        }
+    pub fn send(&self, to: &Address, amount: u64) -> bool {
+        unsafe { send(to.as_ptr(), amount) }
     }
 
     pub fn get_creator(&self) -> Address {
@@ -161,19 +155,18 @@ impl ExternalApi {
         invoker
     }
 
-    pub fn get_timestamp(&self) -> Option<u64> {
-        let data = unsafe { get_time() };
-        Some(data)
+    pub fn get_timestamp(&self) -> u64 {
+        unsafe { get_time() }
     }
 
-    pub fn ret(&self, result: Result<Response, Error>) {
+    pub fn ret(&self, result: Result<Response, String>) {
         match result {
             Ok(response) => {
                 let output = ContractResult::Ok(response).to_vec();
                 unsafe { return_contract(output.as_ptr(), output.len()) };
             }
             Err(err) => {
-                let output = ContractResult::Err(err.to_string()).to_vec();
+                let output = ContractResult::Err(err).to_vec();
                 unsafe { return_contract(output.as_ptr(), output.len()) };
             }
         }
@@ -184,12 +177,11 @@ impl ExternalApi {
         unsafe { notify_contract(raw.as_ptr(), raw.len()) };
     }
 
-    pub fn call_contract(&self, addr: &Address, param: &Param) -> bool {
+    pub fn call_contract(&self, addr: &Address, input: &[u8]) -> bool {
         let addr_ptr = addr.as_ptr();
-        let raw_param = param.to_vec();
-        let size = raw_param.len();
-        let param_ptr = raw_param.as_ptr();
-        unsafe { call_contract(addr_ptr, param_ptr, size) }
+        let input_ptr = input.as_ptr();
+        let size = input.len();
+        unsafe { call_contract(addr_ptr, input_ptr, size) }
     }
 }
 
@@ -209,9 +201,9 @@ extern "C" {
     ) -> i32;
     fn write_db(key_ptr: *const u8, key_size: usize, value_ptr: *const u8, value_size: usize);
     fn delete_db(key_ptr: *const u8, key_size: usize);
-    fn send(to_ptr: *const u8, amount: i64) -> i32;
+    fn send(to_ptr: *const u8, amount: u64) -> bool;
     fn get_creator(creator_ptr: *mut u8);
     fn get_invoker(invoker_ptr: *mut u8);
     fn get_time() -> u64;
-    fn call_contract(addr_ptr: *const u8, param_ptr: *const u8, param_size: usize) -> bool;
+    fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> bool;
 }

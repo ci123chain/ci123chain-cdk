@@ -17,12 +17,24 @@ func NewSink(raw []byte) Sink {
 	}
 }
 
+func (sink Sink) WriteU32(i uint32) {
+	sink.writeLittleEndian(i)
+}
+
+func (sink Sink) WriteU64(i uint64) {
+	sink.writeLittleEndian(i)
+}
+
 func (sink Sink) WriteString(s string) {
 	sink.WriteU32(uint32(len(s)))
 	sink.buf.WriteString(s)
 }
 
-func (sink Sink) WriteU32(i uint32) {
+func (sink Sink) WriteBytes(b []byte) {
+	sink.buf.Write(b)
+}
+
+func (sink Sink) writeLittleEndian(i interface{}) {
 	_ = binary.Write(sink.buf, binary.LittleEndian, i)
 }
 

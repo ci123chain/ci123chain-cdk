@@ -1,40 +1,6 @@
-use crate::codec::{Sink, Source};
+use crate::codec::Sink;
 
-use crate::prelude::{vec, String, Vec};
-
-#[derive(Clone, Default, PartialEq)]
-pub struct Param {
-    pub method: String,
-    pub args: Vec<String>,
-}
-
-impl Param {
-    pub(crate) fn from_slice(raw: &[u8]) -> Param {
-        // [method, num of args, args...]
-        // [string, u32,         string...]
-        let mut source = Source::new(raw);
-        let method = source.read_string();
-        let num = source.read_u32();
-        let mut args = vec![];
-        for _ in 0..num {
-            args.push(source.read_string());
-        }
-        Param {
-            method: method,
-            args: args,
-        }
-    }
-
-    pub(crate) fn to_vec(&self) -> Vec<u8> {
-        let mut sink = Sink::new(0);
-        sink.write_string(&self.method);
-        sink.write_usize(self.args.len());
-        for i in 0..self.args.len() {
-            sink.write_string(&self.args[i]);
-        }
-        sink.into()
-    }
-}
+use crate::prelude::{String, Vec};
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Address([u8; 20]);
@@ -109,4 +75,10 @@ impl ContractResult {
             }
         }
     }
+}
+
+#[derive(Debug)]
+pub enum Error {
+    UnexpectedEOF,
+    InvalidUtf8,
 }

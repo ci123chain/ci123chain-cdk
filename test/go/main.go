@@ -19,6 +19,7 @@ package main
 import "C"
 import (
 	"fmt"
+	"unicode/utf8"
 	"unsafe"
 
 	wasm "github.com/wasmerio/go-ext-wasm/wasmer"
@@ -80,8 +81,8 @@ func return_contract(context unsafe.Pointer, ptr, size int32) {
 }
 
 //export call_contract
-func call_contract(context unsafe.Pointer, addrPtr, paramPtr, paramSize int32) int32 {
-	return callContract(context, addrPtr, paramPtr, paramSize)
+func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) int32 {
+	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
 var inputData []byte
@@ -135,46 +136,59 @@ func ontologyContract() {
 		return
 	}
 
-	params := []Param{{
-		Method: "write_db",
-		Args:   []string{"time", "机器"},
-	}, {
-		Method: "read_db",
-		Args:   []string{"time"},
-	}, {
-		Method: "delete_db",
-		Args:   []string{"time"},
-	}, {
-		Method: "send",
-		Args:   []string{"user0000000000000000", "7"},
-	}, {
-		Method: "get_creator",
-		Args:   []string{},
-	}, {
-		Method: "get_invoker",
-		Args:   []string{},
-	}, {
-		Method: "get_time",
-		Args:   []string{},
-	}, {
-		Method: "call_contract",
-		Args:   []string{"contract000000000000", "call_method", "call_args"},
-	}, {
-		Method: "notify",
-		Args:   []string{},
-	}, {
-		Method: "这是一个无效的方法",
-		Args:   []string{},
-	}}
+	params := [][]interface{}{
+		{"write_db", "time", "机器"},
+		{"read_db", "time"},
+		{"delete_db", "time"},
+		{"send", NewAddress([]byte("user0000000000000000")), uint64(7)},
+		{"get_creator"},
+		{"get_invoker"},
+		{"get_time"},
+		{"call_contract", NewAddress([]byte("contract000000000000")), uint32(3), []byte{1, 2, 3}},
+		{"notify"},
+		{"这是一个无效的方法"},
+	}
 
 	for _, param := range params {
-		fmt.Printf("\n==============================\ncall %s\n", param.Method)
-		inputData = param.Serialize()
+		fmt.Printf("\n==============================\ncall %s\n", param[0])
+		inputData = serialize(param)
 		_, err = invoke()
 		if err != nil {
 			panic(err)
 		}
 	}
+}
+
+func serialize(raw []interface{}) (res []byte) {
+	sink := NewSink(res)
+
+	for i := range raw {
+		switch r := raw[i].(type) {
+		case string:
+			//字符串必须是合法的utf8字符串
+			if !utf8.ValidString(r) {
+				panic("invalid utf8 string")
+			}
+			sink.WriteString(r)
+
+		case uint64:
+			sink.WriteU64(r)
+
+		case uint32:
+			sink.WriteU32(r)
+
+		case []byte:
+			sink.WriteBytes(r)
+
+		case Address:
+			sink.WriteBytes(r[:])
+
+		default:
+			panic("unexpected type")
+		}
+	}
+
+	return sink.Bytes()
 }
 
 func main() {

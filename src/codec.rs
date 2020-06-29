@@ -1,13 +1,13 @@
-use crate::types::Address;
+use crate::types::{Address, Error};
 
-use crate::prelude::{String, Vec};
+use crate::prelude::{str, Vec};
 
-pub struct Sink {
+pub(crate) struct Sink {
     buf: Vec<u8>,
 }
 
 impl Sink {
-    pub fn new(cap: usize) -> Self {
+    pub(crate) fn new(cap: usize) -> Self {
         Sink {
             buf: Vec::with_capacity(cap),
         }
@@ -51,74 +51,126 @@ impl Sink {
         self.write_bytes(addr.into_slice());
     }
 
-    pub(crate) fn write_string(&mut self, string: &str) {
+    pub(crate) fn write_str(&mut self, string: &str) {
         self.write_usize(string.len());
         self.write_bytes(string.as_bytes());
     }
 
-    pub fn bytes(&self) -> &[u8] {
+    #[allow(unused)]
+    pub(crate) fn bytes(&self) -> &[u8] {
         &self.buf
     }
 
-    pub fn into(self) -> Vec<u8> {
+    pub(crate) fn into(self) -> Vec<u8> {
         self.buf
     }
 }
 
-pub struct Source<'a> {
-    buf: &'a [u8],
+pub struct Source {
+    buf: Vec<u8>,
     pos: usize,
+    size: usize,
 }
 
-impl<'a> Source<'a> {
-    pub fn new(data: &'a [u8]) -> Self {
-        Self { buf: data, pos: 0 }
-    }
-
-    #[allow(unused)]
-    pub(crate) fn read_byte(&mut self) -> u8 {
-        self.pos += 1;
-        self.buf[self.pos - 1]
-    }
-
-    #[allow(unused)]
-    pub(crate) fn read_bool(&mut self) -> bool {
-        if self.read_byte() == 0 {
-            return false;
+impl Source {
+    pub(crate) fn new(data: Vec<u8>) -> Self {
+        let length = data.len();
+        Self {
+            buf: data,
+            pos: 0,
+            size: length,
         }
-        true
     }
 
-    pub(crate) fn read_bytes(&mut self, len: usize) -> &'a [u8] {
+    #[allow(unused)]
+    pub fn read_byte(&mut self) -> Result<u8, Error> {
+        if self.pos >= self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos += 1;
+        Ok(self.buf[self.pos - 1])
+    }
+
+    #[allow(unused)]
+    pub fn read_bool(&mut self) -> Result<bool, Error> {
+        if self.read_byte()? == 0 {
+            return Ok(false);
+        }
+        Ok(true)
+    }
+
+    #[allow(unused)]
+    pub fn read_bytes(&mut self, len: usize) -> Result<&[u8], Error> {
+        if self.pos + len > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
         self.pos += len;
-        &self.buf[self.pos - len..self.pos]
+        Ok(&self.buf[self.pos - len..self.pos])
     }
 
-    pub(crate) fn read_u32(&mut self) -> u32 {
+    #[allow(unused)]
+    pub fn read_u32(&mut self) -> Result<u32, Error> {
+        if self.pos + 4 > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
         self.pos += 4;
-        u32::from_le_bytes(clone_into_array(&self.buf[self.pos - 4..self.pos]))
-    }
-
-    pub(crate) fn read_usize(&mut self) -> usize {
-        self.read_u32() as usize
+        Ok(u32::from_le_bytes(clone_into_array(
+            &self.buf[self.pos - 4..self.pos],
+        )))
     }
 
     #[allow(unused)]
-    pub(crate) fn read_i64(&mut self) -> i64 {
+    pub fn read_u64(&mut self) -> Result<u64, Error> {
+        if self.pos + 8 > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
         self.pos += 8;
-        i64::from_le_bytes(clone_into_array(&self.buf[self.pos - 8..self.pos]))
+        Ok(u64::from_le_bytes(clone_into_array(
+            &self.buf[self.pos - 8..self.pos],
+        )))
     }
 
     #[allow(unused)]
-    pub(crate) fn read_address(&mut self) -> Address {
-        let bytes = self.read_bytes(20);
-        Address::new(&clone_into_array(bytes))
+    pub fn read_usize(&mut self) -> Result<usize, Error> {
+        Ok(self.read_u32()? as usize)
     }
 
-    pub(crate) fn read_string(&mut self) -> String {
-        let size = self.read_usize();
-        let bytes = self.read_bytes(size);
-        unsafe { String::from_utf8_unchecked(bytes.iter().cloned().collect()) }
+    #[allow(unused)]
+    pub fn read_i32(&mut self) -> Result<i32, Error> {
+        if self.pos + 4 > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos += 4;
+        Ok(i32::from_le_bytes(clone_into_array(
+            &self.buf[self.pos - 4..self.pos],
+        )))
+    }
+
+    #[allow(unused)]
+    pub fn read_i64(&mut self) -> Result<i64, Error> {
+        if self.pos + 8 > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos += 8;
+        Ok(i64::from_le_bytes(clone_into_array(
+            &self.buf[self.pos - 8..self.pos],
+        )))
+    }
+
+    #[allow(unused)]
+    pub fn read_address(&mut self) -> Result<Address, Error> {
+        let bytes = self.read_bytes(20)?;
+        Ok(Address::new(&clone_into_array(bytes)))
+    }
+
+    #[allow(unused)]
+    pub fn read_str(&mut self) -> Result<&str, Error> {
+        let size = self.read_usize()?;
+        let bytes = self.read_bytes(size)?;
+        match str::from_utf8(bytes) {
+            Ok(s) => Ok(s),
+            Err(_) => Err(Error::InvalidUtf8),
+        }
     }
 }
 
