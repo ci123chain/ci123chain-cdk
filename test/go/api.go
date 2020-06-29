@@ -83,15 +83,15 @@ func NewEventFromSlice(raw []byte) (Event, error) {
 	return event, nil
 }
 
-func getInputLength(_ unsafe.Pointer) int32 {
-	return int32(len(inputData))
+func getInputLength(_ unsafe.Pointer, token int32) int32 {
+	return int32(len(inputData[token]))
 }
 
-func getInput(context unsafe.Pointer, ptr int32, size int32) {
+func getInput(context unsafe.Pointer, token, ptr int32, size int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
 
-	copy(memory[ptr:ptr+size], inputData)
+	copy(memory[ptr:ptr+size], inputData[token])
 }
 
 func performSend(context unsafe.Pointer, to int32, amount int64) int32 {
@@ -181,13 +181,16 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 	var memory = instanceContext.Memory().Data()
 
 	var addr Address
-	copy(addr[:], memory[addrPtr: addrPtr + AddressSize])
+	copy(addr[:], memory[addrPtr:addrPtr+AddressSize])
 
-	input := memory[inputPtr: inputPtr+ inputSize]
+	input := memory[inputPtr : inputPtr+inputSize]
 
 	fmt.Println("call contract: " + addr.ToString())
 	fmt.Print("call param: ")
 	fmt.Println(input)
 
-	return 1
+	token := int32(1)
+	inputData[token] = []byte("return value from called contract")
+
+	return token
 }

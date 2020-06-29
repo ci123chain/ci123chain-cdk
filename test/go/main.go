@@ -11,8 +11,8 @@ package main
 // extern void get_invoker(void*, int);
 // extern long long get_time(void*);
 //
-// extern int get_input_length(void*);
-// extern void get_input(void*, int, int);
+// extern int get_input_length(void*, int);
+// extern void get_input(void*, int, int, int);
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
@@ -61,13 +61,13 @@ func get_time(context unsafe.Pointer) int64 {
 }
 
 //export get_input_length
-func get_input_length(context unsafe.Pointer) int32 {
-	return getInputLength(context)
+func get_input_length(context unsafe.Pointer, token int32) int32 {
+	return getInputLength(context, token)
 }
 
 //export get_input
-func get_input(context unsafe.Pointer, ptr, size int32) {
-	getInput(context, ptr, size)
+func get_input(context unsafe.Pointer, token, ptr, size int32) {
+	getInput(context, token, ptr, size)
 }
 
 //export notify_contract
@@ -85,7 +85,7 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
-var inputData []byte
+var inputData = map[int32][]byte{}
 
 func getBytes() []byte {
 	modulePath := "../../example/target/example.wasm"
@@ -151,7 +151,7 @@ func ontologyContract() {
 
 	for _, param := range params {
 		fmt.Printf("\n==============================\ncall %s\n", param[0])
-		inputData = serialize(param)
+		inputData[0] = serialize(param)
 		_, err = invoke()
 		if err != nil {
 			panic(err)

@@ -132,11 +132,7 @@ impl<'a> ExternalApi {
     }
 
     pub fn input(&self) -> Source {
-        let size = unsafe { get_input_length() };
-        let input: Vec<u8> = vec![0; size];
-        let pointer = input.as_ptr();
-        unsafe { get_input(pointer, size) };
-        Source::new(input)
+        Source::new(self.get_input(0))
     }
 
     pub fn send(&self, to: &Address, amount: u64) -> bool {
@@ -177,18 +173,30 @@ impl<'a> ExternalApi {
         unsafe { notify_contract(raw.as_ptr(), raw.len()) };
     }
 
-    pub fn call_contract(&self, addr: &Address, input: &[u8]) -> bool {
+    pub fn call_contract(&self, addr: &Address, input: &[u8]) -> Option<Vec<u8>> {
         let addr_ptr = addr.as_ptr();
         let input_ptr = input.as_ptr();
         let size = input.len();
-        unsafe { call_contract(addr_ptr, input_ptr, size) }
+        let token = unsafe { call_contract(addr_ptr, input_ptr, size) };
+        if token < 0 {
+            return None;
+        }
+        Some(self.get_input(token))
+    }
+
+    fn get_input(&self, token: i32) -> Vec<u8> {
+        let input_size = unsafe { get_input_length(token) };
+        let input: Vec<u8> = vec![0; input_size];
+        let input_ptr = input.as_ptr();
+        unsafe { get_input(token, input_ptr, input_size) };
+        input
     }
 }
 
 // This interface will compile into required Wasm imports.
 extern "C" {
-    fn get_input_length() -> usize;
-    fn get_input(input_ptr: *const u8, size: usize);
+    fn get_input_length(token: i32) -> usize;
+    fn get_input(token: i32, input_ptr: *const u8, input_size: usize);
     fn notify_contract(msg_ptr: *const u8, msg_size: usize);
     fn return_contract(value_ptr: *const u8, value_size: usize);
 
@@ -205,5 +213,5 @@ extern "C" {
     fn get_creator(creator_ptr: *mut u8);
     fn get_invoker(invoker_ptr: *mut u8);
     fn get_time() -> u64;
-    fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> bool;
+    fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
 }

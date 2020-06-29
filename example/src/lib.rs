@@ -61,10 +61,10 @@ pub fn invoke() {
             let addr = input.read_address().unwrap();
             let input_size = input.read_usize().unwrap();
             let ret_input = input.read_bytes(input_size).unwrap();
-            let res = deps.api.call_contract(&addr, &ret_input);
-            return_contract(Ok(Response {
-                data: res.to_string().as_bytes(),
-            }));
+            match deps.api.call_contract(&addr, &ret_input) {
+                Some(res) => return_contract(Ok(Response { data: &res })),
+                None => return_contract(Err("call contract error")),
+            }
         }
         "notify" => {
             event("event type", "event msg");
