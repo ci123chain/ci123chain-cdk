@@ -10,12 +10,12 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
-pub struct Event<'a, 'b, 'c> {
+pub struct Event<'a> {
     pub r#type: &'a str,
-    pub attr: Vec<(&'b str, ItemValue<'c>)>,
+    pub attr: Vec<(&'a str, ItemValue<'a>)>,
 }
 
-impl<'a, 'b, 'c> Event<'a, 'b, 'c> {
+impl<'a> Event<'a> {
     pub fn new(event_type: &'a str) -> Event {
         Event {
             r#type: event_type,
@@ -23,7 +23,7 @@ impl<'a, 'b, 'c> Event<'a, 'b, 'c> {
         }
     }
 
-    pub fn add(&mut self, key: &'b str, value: ItemValue<'c>) {
+    pub fn add(&mut self, key: &'a str, value: ItemValue<'a>) {
         self.attr.push((key, value));
     }
 
