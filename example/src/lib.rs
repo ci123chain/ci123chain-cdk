@@ -74,7 +74,7 @@ pub fn invoke() {
         }
         _ => {
             // 返回Error
-            return_contract(Err("invoke method not found".to_string()));
+            return_contract(Err("invoke method not found"));
         }
     }
 }
@@ -104,6 +104,6 @@ fn delete_db(key: &str) {
     runtime::make_dependencies().storage.delete(key.as_bytes())
 }
 
-fn return_contract(result: Result<Response, String>) {
+fn return_contract<'a>(result: Result<Response, &'a str>) {
     runtime::make_dependencies().api.ret(result)
 }

@@ -126,7 +126,7 @@ impl Store {
 
 pub struct ExternalApi {}
 
-impl ExternalApi {
+impl<'a> ExternalApi {
     fn new() -> ExternalApi {
         ExternalApi {}
     }
@@ -159,7 +159,7 @@ impl ExternalApi {
         unsafe { get_time() }
     }
 
-    pub fn ret(&self, result: Result<Response, String>) {
+    pub fn ret(&self, result: Result<Response, &'a str>) {
         match result {
             Ok(response) => {
                 let output = ContractResult::Ok(response).to_vec();

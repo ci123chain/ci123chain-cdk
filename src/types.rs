@@ -50,12 +50,12 @@ pub struct Response {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ContractResult {
+pub enum ContractResult<'a> {
     Ok(Response),
-    Err(String),
+    Err(&'a str),
 }
 
-impl ContractResult {
+impl ContractResult<'_> {
     pub(crate) fn to_vec(&self) -> Vec<u8> {
         // [ok or error, size of data, data]
         // [bool,        usize,        bytes]
