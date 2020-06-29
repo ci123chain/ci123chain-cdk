@@ -16,6 +16,7 @@ package main
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
+// extern void destroy_contract(void*, int);
 import "C"
 import (
 	"fmt"
@@ -85,6 +86,11 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
+//export destroy_contract
+func destroy_contract(context unsafe.Pointer, addrPtr int32) {
+	destroyContract(context, addrPtr)
+}
+
 var inputData = map[int32][]byte{}
 
 const (
@@ -122,6 +128,7 @@ func ontologyContract() {
 	_, _ = imports.Append("return_contract", return_contract, C.return_contract)
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
+	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 
 	module, err := wasm.Compile(getBytes())
 	if err != nil {
@@ -150,6 +157,7 @@ func ontologyContract() {
 		{"get_invoker"},
 		{"get_time"},
 		{"call_contract", NewAddress([]byte("contract000000000000")), uint32(3), []byte{1, 2, 3}},
+		{"destroy_contract", NewAddress([]byte("contract000000000001"))},
 		{"notify"},
 		{"这是一个无效的方法"},
 	}

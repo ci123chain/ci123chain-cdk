@@ -184,6 +184,10 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
+    pub fn destroy_contract(&self, addr: &Address) {
+        unsafe { destroy_contract(addr.as_ptr()) }
+    }
+
     fn get_input(&self, token: i32) -> Vec<u8> {
         let input_size = unsafe { get_input_length(token) };
         let input: Vec<u8> = vec![0; input_size];
@@ -214,4 +218,5 @@ extern "C" {
     fn get_invoker(invoker_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
+    fn destroy_contract(addr_ptr: *const u8);
 }

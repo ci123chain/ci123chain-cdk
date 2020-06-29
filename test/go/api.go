@@ -194,3 +194,13 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 
 	return token
 }
+
+func destroyContract(context unsafe.Pointer, addrPtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	var addr Address
+	copy(addr[:], memory[addrPtr:addrPtr+AddressSize])
+
+	fmt.Printf("destroy contract: %s\n", addr.ToString())
+}

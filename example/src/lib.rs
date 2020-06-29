@@ -66,6 +66,10 @@ pub fn invoke() {
                 None => return_contract(Err("call contract error")),
             }
         }
+        "destroy_contract" => {
+            let addr = input.read_address().unwrap();
+            deps.api.destroy_contract(&addr);
+        }
         "notify" => {
             event("event type", "event msg");
             return_contract(Ok(Response {
