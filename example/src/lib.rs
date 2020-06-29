@@ -80,7 +80,7 @@ pub fn invoke() {
 }
 
 // subscribe 基础用法 query = "type.key = 'value'"
-fn event(method: &'static str, msg: &'static str) {
+fn event(method: &str, msg: &str) {
     let mut event = runtime::Event::new(method);
     event.add("msg", IString(msg));
     runtime::make_dependencies().api.notify(&event);

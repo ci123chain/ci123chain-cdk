@@ -10,20 +10,20 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
-pub struct Event {
-    pub r#type: &'static str,
-    pub attr: Vec<(&'static str, ItemValue)>,
+pub struct Event<'a, 'b, 'c> {
+    pub r#type: &'a str,
+    pub attr: Vec<(&'b str, ItemValue<'c>)>,
 }
 
-impl Event {
-    pub fn new(event_type: &'static str) -> Event {
+impl<'a, 'b, 'c> Event<'a, 'b, 'c> {
+    pub fn new(event_type: &'a str) -> Event {
         Event {
             r#type: event_type,
             attr: vec![],
         }
     }
 
-    pub fn add(&mut self, key: &'static str, value: ItemValue) {
+    pub fn add(&mut self, key: &'b str, value: ItemValue<'c>) {
         self.attr.push((key, value));
     }
 
@@ -50,8 +50,8 @@ impl Event {
     }
 }
 
-pub enum ItemValue {
-    Str(&'static str),
+pub enum ItemValue<'a> {
+    Str(&'a str),
     Int64(i64),
 }
 
@@ -188,9 +188,9 @@ impl ExternalApi {
 // This interface will compile into required Wasm imports.
 extern "C" {
     fn get_input_length() -> usize;
-    fn get_input(method: *const u8, size: usize);
-    fn notify_contract(msg: *const u8, msg_size: usize);
-    fn return_contract(value: *const u8, value_size: usize);
+    fn get_input(input_ptr: *const u8, size: usize);
+    fn notify_contract(msg_ptr: *const u8, msg_size: usize);
+    fn return_contract(value_ptr: *const u8, value_size: usize);
 
     fn read_db(
         key_ptr: *const u8,
