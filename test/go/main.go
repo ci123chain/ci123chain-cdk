@@ -87,6 +87,11 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 
 var inputData = map[int32][]byte{}
 
+const (
+	InputDataTypeParam          = 0
+	InputDataTypeContractResult = 1
+)
+
 func getBytes() []byte {
 	modulePath := "../../example/target/example.wasm"
 
@@ -151,7 +156,7 @@ func ontologyContract() {
 
 	for _, param := range params {
 		fmt.Printf("\n==============================\ncall %s\n", param[0])
-		inputData[0] = serialize(param)
+		inputData[InputDataTypeParam] = serialize(param)
 		_, err = invoke()
 		if err != nil {
 			panic(err)

@@ -189,7 +189,7 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 	fmt.Print("call param: ")
 	fmt.Println(input)
 
-	token := int32(1)
+	token := int32(InputDataTypeContractResult)
 	inputData[token] = []byte("return value from called contract")
 
 	return token
