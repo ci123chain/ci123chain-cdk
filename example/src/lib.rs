@@ -79,9 +79,7 @@ pub fn invoke() {
         }
         _ => {
             // 返回指定类型的Error
-            return_contract(Err(errors::Error::NotFound {
-                msg: "invoke method",
-            }));
+            return_contract(Err(errors::Error("invoke method not found".to_string())));
         }
     }
 }
