@@ -2,7 +2,7 @@ extern crate c123chain_cdk as cdk;
 
 use cdk::errors;
 use cdk::runtime;
-use cdk::runtime::ItemValue::String as IString;
+use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, Param, Response};
 
 #[no_mangle]
@@ -11,15 +11,21 @@ pub fn invoke() {
     let param = deps.api.input();
     match param.method.as_str() {
         "read_db" => {
-            event(param.method, read_db(param.args[0].as_str()));
+            return_contract(Ok(Response {
+                data: read_db(&param.args[0]).into_bytes(),
+            }));
         }
         "write_db" => {
             write_db(param.args[0].as_str(), param.args[1].as_str());
-            event(param.method, param.args[0].clone());
+            return_contract(Ok(Response {
+                data: "success".as_bytes().iter().cloned().collect(),
+            }));
         }
         "delete_db" => {
             delete_db(param.args[0].as_str());
-            event(param.method, param.args[0].clone());
+            return_contract(Ok(Response {
+                data: "success".as_bytes().iter().cloned().collect(),
+            }));
         }
         "send" => {
             let mut addr = [0; 20];
@@ -29,19 +35,27 @@ pub fn invoke() {
             let res = deps
                 .api
                 .send(&Address::new(&addr), param.args[1].parse().unwrap());
-            event(param.method, res.unwrap().to_string());
+            return_contract(Ok(Response {
+                data: res.unwrap().to_string().into_bytes(),
+            }));
         }
         "get_creator" => {
             let creator = deps.api.get_creator();
-            event(param.method, creator.to_hex_string());
+            return_contract(Ok(Response {
+                data: creator.to_hex_string().into_bytes(),
+            }));
         }
         "get_invoker" => {
             let invoker = deps.api.get_invoker();
-            event(param.method, invoker.to_hex_string());
+            return_contract(Ok(Response {
+                data: invoker.to_hex_string().into_bytes(),
+            }));
         }
         "get_time" => {
             let time_stamp = deps.api.get_timestamp();
-            event(param.method, time_stamp.unwrap().to_string());
+            return_contract(Ok(Response {
+                data: time_stamp.unwrap().to_string().into_bytes(),
+            }));
         }
         "call_contract" => {
             let mut addr = [0; 20];
@@ -53,24 +67,29 @@ pub fn invoke() {
                 args: vec![param.args[2].clone()],
             };
             let res = deps.api.call_contract(&Address::new(&addr), &ret_param);
-            event(param.method, res.to_string());
+            return_contract(Ok(Response {
+                data: res.to_string().into_bytes(),
+            }));
+        }
+        "notify" => {
+            event("event type", "event msg");
+            return_contract(Ok(Response {
+                data: "success".as_bytes().iter().cloned().collect(),
+            }));
         }
         _ => {
             // 返回指定类型的Error
-            deps.api.ret(Err(errors::Error::NotFound {
+            return_contract(Err(errors::Error::NotFound {
                 msg: "invoke method",
             }));
         }
     }
-    deps.api.ret(Ok(Response {
-        data: "success".as_bytes().iter().cloned().collect(),
-    }))
 }
 
 // subscribe 基础用法 query = "type.key = 'value'"
-fn event(method: String, msg: String) {
+fn event(method: &'static str, msg: &'static str) {
     let mut event = runtime::Event::new(method);
-    event.add("msg".to_string(), IString(msg));
+    event.add("msg", IString(msg));
     runtime::make_dependencies().api.notify(&event);
 }
 
@@ -90,4 +109,8 @@ fn write_db(key: &str, value: &str) {
 
 fn delete_db(key: &str) {
     runtime::make_dependencies().storage.delete(key.as_bytes())
+}
+
+fn return_contract(result: Result<Response, errors::Error>) {
+    runtime::make_dependencies().api.ret(result)
 }

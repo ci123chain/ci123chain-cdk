@@ -51,7 +51,7 @@ impl Sink {
         self.write_bytes(addr.into_slice());
     }
 
-    pub(crate) fn write_string(&mut self, string: &String) {
+    pub(crate) fn write_string(&mut self, string: &str) {
         self.write_usize(string.len());
         self.write_bytes(string.as_bytes());
     }

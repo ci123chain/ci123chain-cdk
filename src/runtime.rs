@@ -2,7 +2,7 @@ use crate::codec::Sink;
 use crate::errors::Error;
 use crate::types::{Address, ContractResult, Param, Response};
 
-use crate::prelude::{vec, String, ToString, Vec};
+use crate::prelude::{vec, ToString, Vec};
 
 pub fn make_dependencies() -> Dependencies {
     Dependencies {
@@ -12,19 +12,19 @@ pub fn make_dependencies() -> Dependencies {
 }
 
 pub struct Event {
-    pub r#type: String,
-    pub attr: Vec<(String, ItemValue)>,
+    pub r#type: &'static str,
+    pub attr: Vec<(&'static str, ItemValue)>,
 }
 
 impl Event {
-    pub fn new(event_type: String) -> Event {
+    pub fn new(event_type: &'static str) -> Event {
         Event {
             r#type: event_type,
             attr: vec![],
         }
     }
 
-    pub fn add(&mut self, key: String, value: ItemValue) {
+    pub fn add(&mut self, key: &'static str, value: ItemValue) {
         self.attr.push((key, value));
     }
 
@@ -41,7 +41,7 @@ impl Event {
                     sink.write_byte(0);
                     sink.write_i64(*i);
                 }
-                ItemValue::String(s) => {
+                ItemValue::Str(s) => {
                     sink.write_byte(1);
                     sink.write_string(s);
                 }
@@ -52,7 +52,7 @@ impl Event {
 }
 
 pub enum ItemValue {
-    String(String),
+    Str(&'static str),
     Int64(i64),
 }
 
@@ -62,25 +62,19 @@ pub struct Dependencies {
 }
 
 pub struct Store {
-    prefix: String,
+    prefix: &'static str,
 }
 
 impl Store {
     fn new() -> Store {
-        Store {
-            prefix: "test-".to_string(),
-        }
+        Store { prefix: "test-" }
     }
 
     pub fn set(&self, key: &[u8], value: &[u8]) {
-        let mut prefix = self.prefix.clone();
-        let real_key = unsafe { prefix.as_mut_vec() };
-        for &ele in key {
-            real_key.push(ele);
-        }
+        let key = self.gen_key(key);
 
-        let key_ptr = real_key.as_ptr();
-        let key_size = real_key.len();
+        let key_ptr = key.as_ptr();
+        let key_size = key.len();
 
         let value_ptr = value.as_ptr();
         let value_size = value.len();
@@ -91,41 +85,43 @@ impl Store {
 
     pub fn get(&self, key: &[u8]) -> Option<Vec<u8>> {
         const INITIAL: usize = 32;
-        let mut real_value = vec![0; INITIAL];
-        let mut prefix = self.prefix.clone();
-        let real_key = unsafe { prefix.as_mut_vec() };
-        for &ele in key {
-            real_key.push(ele);
-        }
+
+        let key = self.gen_key(key);
+        let mut value = vec![0; INITIAL];
 
         let key_ptr = key.as_ptr();
         let key_size = key.len();
 
-        let value_ptr = real_value.as_mut_ptr();
-        let value_size = real_value.len();
+        let value_ptr = value.as_mut_ptr();
+        let value_size = value.len();
 
         let size = unsafe { read_db(key_ptr, key_size, value_ptr, value_size, 0) } as usize;
 
-        real_value.resize(size, 0);
+        value.resize(size, 0);
         if size > INITIAL {
-            let value = &mut real_value[INITIAL..];
+            let value = &mut value[INITIAL..];
             unsafe { read_db(key_ptr, key_size, value.as_mut_ptr(), value.len(), INITIAL) };
         }
 
-        Some(real_value)
+        Some(value)
     }
 
     pub fn delete(&self, key: &[u8]) {
-        let mut prefix = self.prefix.clone();
-        let real_key = unsafe { prefix.as_mut_vec() };
-        for &ele in key {
-            real_key.push(ele);
-        }
+        let key = self.gen_key(key);
+
         let key_ptr = key.as_ptr();
         let key_size = key.len();
         unsafe {
             delete_db(key_ptr, key_size);
         }
+    }
+
+    fn gen_key(&self, key: &[u8]) -> Vec<u8> {
+        let mut real_key: Vec<u8> = self.prefix.as_bytes().iter().cloned().collect();
+        for &ele in key {
+            real_key.push(ele);
+        }
+        real_key
     }
 }
 
