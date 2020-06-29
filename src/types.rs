@@ -45,13 +45,13 @@ impl Address {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Response {
-    pub data: Vec<u8>,
+pub struct Response<'a> {
+    pub data: &'a [u8],
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ContractResult<'a> {
-    Ok(Response),
+    Ok(Response<'a>),
     Err(&'a str),
 }
 

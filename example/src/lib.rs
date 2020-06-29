@@ -13,7 +13,7 @@ pub fn invoke() {
         "read_db" => {
             let key = input.read_str().unwrap();
             return_contract(Ok(Response {
-                data: read_db(key).into_bytes(),
+                data: read_db(key).as_bytes(),
             }));
         }
         "write_db" => {
@@ -21,14 +21,14 @@ pub fn invoke() {
             let value = input.read_str().unwrap();
             write_db(&key, value);
             return_contract(Ok(Response {
-                data: "success".as_bytes().iter().cloned().collect(),
+                data: "success".as_bytes(),
             }));
         }
         "delete_db" => {
             let key = input.read_str().unwrap();
             delete_db(key);
             return_contract(Ok(Response {
-                data: "success".as_bytes().iter().cloned().collect(),
+                data: "success".as_bytes(),
             }));
         }
         "send" => {
@@ -36,25 +36,25 @@ pub fn invoke() {
             let amount = input.read_u64().unwrap();
             let res = deps.api.send(&addr, amount);
             return_contract(Ok(Response {
-                data: res.to_string().into_bytes(),
+                data: res.to_string().as_bytes(),
             }));
         }
         "get_creator" => {
             let creator = deps.api.get_creator();
             return_contract(Ok(Response {
-                data: creator.to_hex_string().into_bytes(),
+                data: creator.to_hex_string().as_bytes(),
             }));
         }
         "get_invoker" => {
             let invoker = deps.api.get_invoker();
             return_contract(Ok(Response {
-                data: invoker.to_hex_string().into_bytes(),
+                data: invoker.to_hex_string().as_bytes(),
             }));
         }
         "get_time" => {
             let time_stamp = deps.api.get_timestamp();
             return_contract(Ok(Response {
-                data: time_stamp.to_string().into_bytes(),
+                data: time_stamp.to_string().as_bytes(),
             }));
         }
         "call_contract" => {
@@ -63,13 +63,13 @@ pub fn invoke() {
             let ret_input = input.read_bytes(input_size).unwrap();
             let res = deps.api.call_contract(&addr, &ret_input);
             return_contract(Ok(Response {
-                data: res.to_string().into_bytes(),
+                data: res.to_string().as_bytes(),
             }));
         }
         "notify" => {
             event("event type", "event msg");
             return_contract(Ok(Response {
-                data: "success".as_bytes().iter().cloned().collect(),
+                data: "success".as_bytes(),
             }));
         }
         _ => {
