@@ -59,8 +59,7 @@ pub fn invoke() {
         }
         "call_contract" => {
             let addr = input.read_address().unwrap();
-            let input_size = input.read_usize().unwrap();
-            let ret_input = input.read_bytes(input_size).unwrap();
+            let ret_input = input.read_bytes().unwrap();
             match deps.api.call_contract(&addr, &ret_input) {
                 Some(res) => return_contract(Ok(Response { data: &res })),
                 None => return_contract(Err("call contract error")),
@@ -69,10 +68,12 @@ pub fn invoke() {
         "destroy_contract" => {
             let addr = input.read_address().unwrap();
             deps.api.destroy_contract(&addr);
+            return_contract(Ok(Response {
+                data: "success".as_bytes(),
+            }));
         }
         "migrate_contract" => {
-            let code_size = input.read_usize().unwrap();
-            let code = input.read_bytes(code_size).unwrap();
+            let code = input.read_bytes().unwrap();
             let name = input.read_str().unwrap();
             let version = input.read_str().unwrap();
             let author = input.read_str().unwrap();

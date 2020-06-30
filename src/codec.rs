@@ -26,34 +26,37 @@ impl Sink {
     }
 
     pub(crate) fn write_bytes(&mut self, data: &[u8]) {
-        self.buf.extend_from_slice(data)
+        self.write_usize(data.len());
+        self.write_raw_bytes(data);
     }
 
     #[allow(unused)]
     pub(crate) fn write_u32(&mut self, val: u32) {
         let buf = val.to_le_bytes();
-        self.write_bytes(&buf)
+        self.write_raw_bytes(&buf);
     }
 
     pub(crate) fn write_usize(&mut self, val: usize) {
         let buf = val.to_le_bytes();
-        self.write_bytes(&buf)
+        self.write_raw_bytes(&buf);
     }
 
     pub(crate) fn write_i64(&mut self, val: i64) {
         let buf = val.to_le_bytes();
-        self.write_bytes(&buf);
+        self.write_raw_bytes(&buf);
     }
 
     #[allow(unused)]
     pub(crate) fn write_address(&mut self, addr: &Address) {
-        self.write_byte(20);
-        self.write_bytes(addr.into_slice());
+        self.write_raw_bytes(addr.into_slice());
     }
 
     pub(crate) fn write_str(&mut self, string: &str) {
-        self.write_usize(string.len());
         self.write_bytes(string.as_bytes());
+    }
+
+    pub(crate) fn write_raw_bytes(&mut self, data: &[u8]) {
+        self.buf.extend_from_slice(data);
     }
 
     #[allow(unused)]
@@ -99,14 +102,9 @@ impl Source {
         Ok(true)
     }
 
-    pub fn read_bytes(&self, len: usize) -> Result<&[u8], Error> {
-        let old_pos = self.pos.get();
-        let new_pos = old_pos + len;
-        if new_pos > self.size {
-            return Err(Error::UnexpectedEOF);
-        }
-        self.pos.set(new_pos);
-        Ok(&self.buf[old_pos..new_pos])
+    pub fn read_bytes(&self) -> Result<&[u8], Error> {
+        let len = self.read_usize()?;
+        self.read_raw_bytes(len)
     }
 
     pub fn read_u32(&self) -> Result<u32, Error> {
@@ -162,17 +160,26 @@ impl Source {
     }
 
     pub fn read_address(&self) -> Result<Address, Error> {
-        let bytes = self.read_bytes(20)?;
+        let bytes = self.read_raw_bytes(Address::len())?;
         Ok(Address::new(&clone_into_array(bytes)))
     }
 
     pub fn read_str(&self) -> Result<&str, Error> {
-        let size = self.read_usize()?;
-        let bytes = self.read_bytes(size)?;
+        let bytes = self.read_bytes()?;
         match str::from_utf8(bytes) {
             Ok(s) => Ok(s),
             Err(_) => Err(Error::InvalidUtf8),
         }
+    }
+
+    pub(crate) fn read_raw_bytes(&self, len: usize) -> Result<&[u8], Error> {
+        let old_pos = self.pos.get();
+        let new_pos = old_pos + len;
+        if new_pos > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos.set(new_pos);
+        Ok(&self.buf[old_pos..new_pos])
     }
 }
 

@@ -2,19 +2,25 @@ use crate::codec::Sink;
 
 use crate::prelude::{String, Vec};
 
+const ADDR_SIZE: usize = 20;
+
 #[derive(Clone, Default, Debug, PartialEq)]
-pub struct Address([u8; 20]);
+pub struct Address([u8; ADDR_SIZE]);
 
 impl Address {
-    pub fn new(addr: &[u8; 20]) -> Address {
+    pub fn new(addr: &[u8; ADDR_SIZE]) -> Address {
         Address(*addr)
     }
 
     pub fn zero() -> Address {
-        Address([0; 20])
+        Address([0; ADDR_SIZE])
     }
 
-    pub fn into(&self) -> [u8; 20] {
+    pub fn len() -> usize {
+        ADDR_SIZE
+    }
+
+    pub fn into(&self) -> [u8; ADDR_SIZE] {
         self.0
     }
 
@@ -59,13 +65,11 @@ impl ContractResult<'_> {
         match self {
             ContractResult::Ok(resp) => {
                 sink.write_bool(true);
-                sink.write_usize(resp.data.len());
                 sink.write_bytes(&resp.data);
                 sink.into()
             }
             ContractResult::Err(err) => {
                 sink.write_bool(false);
-                sink.write_usize(err.len());
                 sink.write_bytes(err.as_bytes());
                 sink.into()
             }

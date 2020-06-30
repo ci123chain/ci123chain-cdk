@@ -166,9 +166,9 @@ func ontologyContract() {
 		{"get_creator"},
 		{"get_invoker"},
 		{"get_time"},
-		{"call_contract", NewAddress([]byte("contract000000000000")), uint32(3), []byte{1, 2, 3}},
+		{"call_contract", NewAddress([]byte("contract000000000000")), []byte{1, 2, 3}},
 		{"destroy_contract", NewAddress([]byte("contract000000000001"))},
-		{"migrate_contract", uint32(len(code)), code, "demo", "v0.0.1", "me", "email", "description"},
+		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
 		{"这是一个无效的方法"},
 	}
@@ -205,7 +205,7 @@ func serialize(raw []interface{}) (res []byte) {
 			sink.WriteBytes(r)
 
 		case Address:
-			sink.WriteBytes(r[:])
+			sink.WriteAddress(r)
 
 		default:
 			panic("unexpected type")

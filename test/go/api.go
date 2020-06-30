@@ -159,12 +159,7 @@ func returnContract(context unsafe.Pointer, ptr, size int32) {
 		fmt.Println(err)
 		return
 	}
-	length, err := sink.ReadU32()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	msg, _, err := sink.ReadBytes(int(length))
+	msg, _, err := sink.ReadBytes()
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -224,7 +219,7 @@ func migrateContract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSiz
 	fmt.Printf("email: %s\n", string(email))
 	fmt.Printf("desc: %s\n", string(desc))
 
-	var addr = memory[newAddrPtr : newAddrPtr + AddressSize]
+	var addr = memory[newAddrPtr : newAddrPtr+AddressSize]
 	copy(addr, "contract000000000002")
 
 	return 1 // bool
