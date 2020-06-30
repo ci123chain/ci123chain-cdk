@@ -3,6 +3,8 @@ use crate::types::{Address, ContractResult, Response};
 
 use crate::prelude::{vec, Vec};
 
+const INPUT_TOKEN: i32 = 0;
+
 pub fn make_dependencies() -> Dependencies {
     Dependencies {
         storage: Store::new(),
@@ -132,7 +134,7 @@ impl<'a> ExternalApi {
     }
 
     pub fn input(&self) -> Source {
-        Source::new(self.get_input(0))
+        Source::new(self.get_input(INPUT_TOKEN))
     }
 
     pub fn send(&self, to: &Address, amount: u64) -> bool {
