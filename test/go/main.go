@@ -17,6 +17,7 @@ package main
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
 // extern void destroy_contract(void*, int);
+// extern int migrate_contract(void*, int, int, int, int, int, int, int, int, int, int, int, int, int);
 import "C"
 import (
 	"fmt"
@@ -86,6 +87,13 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
+//export migrate_contract
+func migrate_contract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
+	authorPtr, authorSize, emailPtr, emailSize, descPtr, descSize, newAddrPtr int32) int32 {
+	return migrateContract(context, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
+		authorPtr, authorSize, emailPtr, emailSize, descPtr, descSize, newAddrPtr)
+}
+
 //export destroy_contract
 func destroy_contract(context unsafe.Pointer, addrPtr int32) {
 	destroyContract(context, addrPtr)
@@ -129,8 +137,10 @@ func ontologyContract() {
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
+	_, _ = imports.Append("migrate_contract", migrate_contract, C.migrate_contract)
 
-	module, err := wasm.Compile(getBytes())
+	code := getBytes()
+	module, err := wasm.Compile(code)
 	if err != nil {
 		panic(err)
 	}
@@ -158,6 +168,7 @@ func ontologyContract() {
 		{"get_time"},
 		{"call_contract", NewAddress([]byte("contract000000000000")), uint32(3), []byte{1, 2, 3}},
 		{"destroy_contract", NewAddress([]byte("contract000000000001"))},
+		{"migrate_contract", uint32(len(code)), code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
 		{"这是一个无效的方法"},
 	}

@@ -7,7 +7,7 @@ use cdk::types::Response;
 #[no_mangle]
 pub fn invoke() {
     let deps = runtime::make_dependencies();
-    let mut input = deps.api.input();
+    let input = deps.api.input();
     let method = input.read_str().unwrap();
     match method {
         "read_db" => {
@@ -17,9 +17,9 @@ pub fn invoke() {
             }));
         }
         "write_db" => {
-            let key = input.read_str().unwrap().to_owned();
+            let key = input.read_str().unwrap();
             let value = input.read_str().unwrap();
-            write_db(&key, value);
+            write_db(key, value);
             return_contract(Ok(Response {
                 data: "success".as_bytes(),
             }));
@@ -69,6 +69,24 @@ pub fn invoke() {
         "destroy_contract" => {
             let addr = input.read_address().unwrap();
             deps.api.destroy_contract(&addr);
+        }
+        "migrate_contract" => {
+            let code_size = input.read_usize().unwrap();
+            let code = input.read_bytes(code_size).unwrap();
+            let name = input.read_str().unwrap();
+            let version = input.read_str().unwrap();
+            let author = input.read_str().unwrap();
+            let email = input.read_str().unwrap();
+            let desc = input.read_str().unwrap();
+            match deps
+                .api
+                .migrate_contract(code, name, version, author, email, desc)
+            {
+                Some(addr) => return_contract(Ok(Response {
+                    data: addr.into_slice(),
+                })),
+                None => return_contract(Err("migrate contract error")),
+            }
         }
         "notify" => {
             event("event type", "event msg");
