@@ -35,7 +35,17 @@ impl Sink {
         self.write_raw_bytes(&buf);
     }
 
+    pub fn write_u64(&mut self, val: u64) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
     pub fn write_usize(&mut self, val: usize) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
+    pub fn write_i32(&mut self, val: i32) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
