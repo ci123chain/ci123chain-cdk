@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 	"unsafe"
 
@@ -24,7 +25,7 @@ func NewAddress(raw []byte) (addr Address) {
 }
 
 func (addr *Address) ToString() string {
-	return hex.EncodeToString(addr[:])
+	return "0x" + hex.EncodeToString(addr[:])
 }
 
 type Event struct {
@@ -190,14 +191,8 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 	return token
 }
 
-func destroyContract(context unsafe.Pointer, addrPtr int32) {
-	var instanceContext = wasm.IntoInstanceContext(context)
-	var memory = instanceContext.Memory().Data()
-
-	var addr Address
-	copy(addr[:], memory[addrPtr:addrPtr+AddressSize])
-
-	fmt.Printf("destroy contract: %s\n", addr.ToString())
+func destroyContract(_ unsafe.Pointer) {
+	fmt.Println("destroy contract")
 }
 
 func migrateContract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
@@ -223,4 +218,13 @@ func migrateContract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSiz
 	copy(addr, "contract000000000002")
 
 	return 1 // bool
+}
+
+func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	data := memory[dataPtr: dataPtr + dataSize]
+	fmt.Printf("panic: %s\n", string(data))
+	os.Exit(0) // 改成合理的实现
 }

@@ -2,7 +2,7 @@ extern crate c123chain_cdk as cdk;
 
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
-use cdk::types::Response;
+use cdk::types::{Address, Response};
 
 #[no_mangle]
 pub fn invoke() {
@@ -32,7 +32,7 @@ pub fn invoke() {
             }));
         }
         "send" => {
-            let addr = input.read_address().unwrap();
+            let addr: Address = input.read_str().unwrap().into();
             let amount = input.read_u64().unwrap();
             let res = deps.api.send(&addr, amount);
             return_contract(Ok(Response {
@@ -58,7 +58,7 @@ pub fn invoke() {
             }));
         }
         "call_contract" => {
-            let addr = input.read_address().unwrap();
+            let addr: Address = input.read_str().unwrap().into();
             let ret_input = input.read_bytes().unwrap();
             match deps.api.call_contract(&addr, &ret_input) {
                 Some(res) => return_contract(Ok(Response { data: &res })),
@@ -66,8 +66,7 @@ pub fn invoke() {
             }
         }
         "destroy_contract" => {
-            let addr = input.read_address().unwrap();
-            deps.api.destroy_contract(&addr);
+            deps.api.destroy_contract();
             return_contract(Ok(Response {
                 data: "success".as_bytes(),
             }));

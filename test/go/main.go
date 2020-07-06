@@ -16,8 +16,9 @@ package main
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
-// extern void destroy_contract(void*, int);
+// extern void destroy_contract(void*);
 // extern int migrate_contract(void*, int, int, int, int, int, int, int, int, int, int, int, int, int);
+// extern void panic_contract(void*, int, int);
 import "C"
 import (
 	"fmt"
@@ -95,8 +96,13 @@ func migrate_contract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSi
 }
 
 //export destroy_contract
-func destroy_contract(context unsafe.Pointer, addrPtr int32) {
-	destroyContract(context, addrPtr)
+func destroy_contract(context unsafe.Pointer) {
+	destroyContract(context)
+}
+
+//export panic_contract
+func panic_contract(context unsafe.Pointer, dataPtr, dataSize int32) {
+	panicContract(context, dataPtr, dataSize)
 }
 
 var inputData = map[int32][]byte{}
@@ -138,6 +144,7 @@ func ontologyContract() {
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 	_, _ = imports.Append("migrate_contract", migrate_contract, C.migrate_contract)
+	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
 
 	code := getBytes()
 	module, err := wasm.Compile(code)
@@ -158,19 +165,22 @@ func ontologyContract() {
 		return
 	}
 
+	sendAddr := NewAddress([]byte("user0000000000000000"))
+	callAddr := NewAddress([]byte("contract000000000000"))
 	params := [][]interface{}{
 		{"write_db", "time", "机器"},
 		{"read_db", "time"},
 		{"delete_db", "time"},
-		{"send", NewAddress([]byte("user0000000000000000")), uint64(7)},
+		{"send", sendAddr.ToString(), uint64(7)},
 		{"get_creator"},
 		{"get_invoker"},
 		{"get_time"},
-		{"call_contract", NewAddress([]byte("contract000000000000")), []byte{1, 2, 3}},
-		{"destroy_contract", NewAddress([]byte("contract000000000001"))},
+		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
+		{"destroy_contract"},
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
 		{"这是一个无效的方法"},
+		{"send", sendAddr.ToString() + "panic", uint64(7)}, //panic用例
 	}
 
 	for _, param := range params {
@@ -204,8 +214,8 @@ func serialize(raw []interface{}) (res []byte) {
 		case []byte:
 			sink.WriteBytes(r)
 
-		case Address:
-			sink.WriteAddress(r)
+		//case Address:
+		//	sink.WriteAddress(r)
 
 		default:
 			panic("unexpected type")

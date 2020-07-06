@@ -1,11 +1,42 @@
-use crate::codec::Sink;
+use crate::codec::{from_hex_u8, Sink};
+use crate::runtime::panic;
 
-use crate::prelude::{String, Vec};
+use crate::prelude::{String, Vec, Write};
 
 const ADDR_SIZE: usize = 20;
+const ADDR_HEX_SIZE: usize = 42;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Address([u8; ADDR_SIZE]);
+
+impl From<&str> for Address {
+    fn from(s: &str) -> Self {
+        if s.len() != ADDR_HEX_SIZE {
+            panic("invalid address string length");
+        }
+        let raw = s.as_bytes();
+        let mut addr = [0 as u8; ADDR_SIZE];
+        let (mut i, mut j) = (0, 3);
+        while j < s.len() {
+            let panic_err = "unexpected base64 char";
+            let (mut a, mut b) = (0, 0);
+            let res = from_hex_u8(raw[j - 1]);
+            match res {
+                Ok(c) => a = c,
+                Err(_) => panic(panic_err),
+            }
+            let res = from_hex_u8(raw[j]);
+            match res {
+                Ok(c) => b = c,
+                Err(_) => panic(panic_err),
+            }
+            addr[i] = (a << 4) | b;
+            i += 1;
+            j += 2;
+        }
+        Self::new(&addr)
+    }
+}
 
 impl Address {
     pub fn new(addr: &[u8; ADDR_SIZE]) -> Address {
@@ -29,8 +60,8 @@ impl Address {
     }
 
     pub fn to_hex_string(&self) -> String {
-        use core::fmt::Write;
-        let mut s = String::with_capacity(self.0.len() * 2);
+        let mut s = String::with_capacity(self.0.len() * 2 + 2);
+        s += "0x";
         for v in self.0.iter() {
             write!(s, "{:02x}", *v).unwrap();
         }
@@ -81,4 +112,5 @@ impl ContractResult<'_> {
 pub enum Error {
     UnexpectedEOF,
     InvalidUtf8,
+    IrregularData,
 }

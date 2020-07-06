@@ -14,6 +14,7 @@ pub mod prelude {
     pub use alloc::{format, vec};
     pub use core::cmp;
     pub use core::convert::AsMut;
+    pub use core::fmt::Write;
     pub use core::prelude::v1::*;
     pub use std::cell::Cell;
 }

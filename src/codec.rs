@@ -1,4 +1,4 @@
-use crate::types::{Address, Error};
+use crate::types::Error;
 
 use crate::prelude::{str, Cell, Vec};
 
@@ -46,10 +46,10 @@ impl Sink {
         self.write_raw_bytes(&buf);
     }
 
-    #[allow(unused)]
-    pub(crate) fn write_address(&mut self, addr: &Address) {
-        self.write_raw_bytes(addr.into_slice());
-    }
+    // #[allow(unused)]
+    // pub(crate) fn write_address(&mut self, addr: &Address) {
+    //     self.write_raw_bytes(addr.into_slice());
+    // }
 
     pub(crate) fn write_str(&mut self, string: &str) {
         self.write_bytes(string.as_bytes());
@@ -159,10 +159,10 @@ impl Source {
         )))
     }
 
-    pub fn read_address(&self) -> Result<Address, Error> {
-        let bytes = self.read_raw_bytes(Address::len())?;
-        Ok(Address::new(&clone_into_array(bytes)))
-    }
+    // pub fn read_address(&self) -> Result<Address, Error> {
+    //     let bytes = self.read_raw_bytes(Address::len())?;
+    //     Ok(Address::new(&clone_into_array(bytes)))
+    // }
 
     pub fn read_str(&self) -> Result<&str, Error> {
         let bytes = self.read_bytes()?;
@@ -191,4 +191,16 @@ where
     let mut a = A::default();
     <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
     a
+}
+
+pub(crate) fn from_hex_u8(c: u8) -> Result<u8, Error> {
+    if '0' as u8 <= c && c <= '9' as u8 {
+        Ok(c - '0' as u8)
+    } else if 'a' as u8 <= c && c <= 'f' as u8 {
+        Ok(c - 'a' as u8 + 10)
+    } else if 'A' as u8 <= c && c <= 'F' as u8 {
+        Ok(c - 'A' as u8 + 10)
+    } else {
+        Err(Error::IrregularData)
+    }
 }

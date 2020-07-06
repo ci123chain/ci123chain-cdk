@@ -12,6 +12,12 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
+pub(crate) fn panic(data: &str) {
+    unsafe {
+        panic_contract(data.as_ptr(), data.len());
+    }
+}
+
 pub struct Event<'a> {
     pub r#type: &'a str,
     pub attr: Vec<(&'a str, ItemValue<'a>)>,
@@ -186,8 +192,8 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
-    pub fn destroy_contract(&self, addr: &Address) {
-        unsafe { destroy_contract(addr.as_ptr()) }
+    pub fn destroy_contract(&self) {
+        unsafe { destroy_contract() }
     }
 
     pub fn migrate_contract(
@@ -253,7 +259,7 @@ extern "C" {
     fn get_invoker(invoker_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
-    fn destroy_contract(addr_ptr: *const u8);
+    fn destroy_contract();
     fn migrate_contract(
         code_ptr: *const u8,
         code_size: usize,
@@ -269,4 +275,5 @@ extern "C" {
         desc_size: usize,
         new_address_ptr: *mut u8,
     ) -> bool;
+    fn panic_contract(data_ptr: *const u8, data_size: usize);
 }
