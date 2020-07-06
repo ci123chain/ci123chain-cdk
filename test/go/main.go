@@ -180,7 +180,7 @@ func ontologyContract() {
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
 		{"这是一个无效的方法"},
-		{"send", sendAddr.ToString() + "panic", uint64(7)}, //panic用例
+		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
 	}
 
 	for _, param := range params {

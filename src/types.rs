@@ -14,6 +14,9 @@ impl From<&str> for Address {
         if s.len() != ADDR_HEX_SIZE {
             panic("invalid address string length");
         }
+        if &s[0..2] != "0x" {
+            panic("unexpected address string prefix")
+        }
         let raw = s.as_bytes();
         let mut addr = [0 as u8; ADDR_SIZE];
         let (mut i, mut j) = (0, 3);
