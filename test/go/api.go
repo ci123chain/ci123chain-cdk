@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 	"unsafe"
 
@@ -225,6 +224,5 @@ func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	var memory = instanceContext.Memory().Data()
 
 	data := memory[dataPtr : dataPtr+dataSize]
-	fmt.Printf("panic: %s\n", string(data))
-	os.Exit(0) // 改成合理的实现
+	panic("panic: " + string(data))
 }

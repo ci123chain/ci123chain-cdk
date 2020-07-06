@@ -179,17 +179,25 @@ func ontologyContract() {
 		{"destroy_contract"},
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
-		{"这是一个无效的方法"},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
+		{"这是一个无效的方法"},
 	}
 
 	for _, param := range params {
 		fmt.Printf("\n==============================\ncall %s\n", param[0])
 		inputData[InputDataTypeParam] = serialize(param)
-		_, err = invoke()
-		if err != nil {
-			panic(err)
-		}
+		func() {
+			defer func() {
+				if err := recover(); err != nil {
+					fmt.Println(err)
+				}
+			}()
+
+			_, err = invoke()
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 }
 

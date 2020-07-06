@@ -159,6 +159,30 @@ impl Source {
         )))
     }
 
+    pub fn read_u128(&self) -> Result<u128, Error> {
+        let old_pos = self.pos.get();
+        let new_pos = old_pos + 16;
+        if new_pos > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos.set(new_pos);
+        Ok(u128::from_le_bytes(clone_into_array(
+            &self.buf[old_pos..new_pos],
+        )))
+    }
+
+    pub fn read_i128(&self) -> Result<i128, Error> {
+        let old_pos = self.pos.get();
+        let new_pos = old_pos + 16;
+        if new_pos > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos.set(new_pos);
+        Ok(i128::from_le_bytes(clone_into_array(
+            &self.buf[old_pos..new_pos],
+        )))
+    }
+
     // pub fn read_address(&self) -> Result<Address, Error> {
     //     let bytes = self.read_raw_bytes(Address::len())?;
     //     Ok(Address::new(&clone_into_array(bytes)))
