@@ -1,6 +1,5 @@
 extern crate c123chain_cdk as cdk;
 
-use cdk::math::safe_mul;
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, Response};

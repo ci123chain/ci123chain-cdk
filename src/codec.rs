@@ -2,22 +2,22 @@ use crate::types::Error;
 
 use crate::prelude::{str, Cell, Vec};
 
-pub(crate) struct Sink {
+pub struct Sink {
     buf: Vec<u8>,
 }
 
 impl Sink {
-    pub(crate) fn new(cap: usize) -> Self {
+    pub fn new(cap: usize) -> Self {
         Sink {
             buf: Vec::with_capacity(cap),
         }
     }
 
-    pub(crate) fn write_byte(&mut self, b: u8) {
+    pub fn write_byte(&mut self, b: u8) {
         self.buf.push(b)
     }
 
-    pub(crate) fn write_bool(&mut self, b: bool) {
+    pub fn write_bool(&mut self, b: bool) {
         if b {
             self.write_byte(1)
         } else {
@@ -25,23 +25,32 @@ impl Sink {
         }
     }
 
-    pub(crate) fn write_bytes(&mut self, data: &[u8]) {
+    pub fn write_bytes(&mut self, data: &[u8]) {
         self.write_usize(data.len());
         self.write_raw_bytes(data);
     }
 
-    #[allow(unused)]
-    pub(crate) fn write_u32(&mut self, val: u32) {
+    pub fn write_u32(&mut self, val: u32) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
 
-    pub(crate) fn write_usize(&mut self, val: usize) {
+    pub fn write_usize(&mut self, val: usize) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
 
-    pub(crate) fn write_i64(&mut self, val: i64) {
+    pub fn write_i64(&mut self, val: i64) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
+    pub fn write_u128(&mut self, val: u128) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
+    pub fn write_i128(&mut self, val: i128) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
@@ -51,7 +60,7 @@ impl Sink {
     //     self.write_raw_bytes(addr.into_slice());
     // }
 
-    pub(crate) fn write_str(&mut self, string: &str) {
+    pub fn write_str(&mut self, string: &str) {
         self.write_bytes(string.as_bytes());
     }
 
@@ -59,12 +68,11 @@ impl Sink {
         self.buf.extend_from_slice(data);
     }
 
-    #[allow(unused)]
-    pub(crate) fn bytes(&self) -> &[u8] {
+    pub fn bytes(&self) -> &[u8] {
         &self.buf
     }
 
-    pub(crate) fn into(self) -> Vec<u8> {
+    pub fn into(self) -> Vec<u8> {
         self.buf
     }
 }
