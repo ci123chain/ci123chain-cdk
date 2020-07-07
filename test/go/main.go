@@ -179,6 +179,7 @@ func ontologyContract() {
 		{"destroy_contract"},
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
+		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1 << 63 - 1)},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
 		{"这是一个无效的方法"},
 	}
@@ -213,11 +214,17 @@ func serialize(raw []interface{}) (res []byte) {
 			}
 			sink.WriteString(r)
 
+		case uint32:
+			sink.WriteU32(r)
+
 		case uint64:
 			sink.WriteU64(r)
 
-		case uint32:
-			sink.WriteU32(r)
+		case int32:
+			sink.WriteI32(r)
+
+		case int64:
+			sink.WriteI64(r)
 
 		case []byte:
 			sink.WriteBytes(r)

@@ -1,5 +1,6 @@
 extern crate c123chain_cdk as cdk;
 
+use cdk::math;
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, Response};
@@ -87,6 +88,14 @@ pub fn invoke() {
                 })),
                 None => return_contract(Err("migrate contract error")),
             }
+        }
+        "mul" => {
+            let a = input.read_u128().unwrap();
+            let b = input.read_u128().unwrap();
+            let r = math::safe_mul_u128(a, b);
+            return_contract(Ok(Response {
+                data: r.to_string().as_bytes(),
+            }));
         }
         "notify" => {
             event("event type", "event msg");
