@@ -102,7 +102,11 @@ impl Store {
         let value_ptr = value.as_mut_ptr();
         let value_size = value.len();
 
-        let size = unsafe { read_db(key_ptr, key_size, value_ptr, value_size, 0) } as usize;
+        let size = unsafe { read_db(key_ptr, key_size, value_ptr, value_size, 0) };
+        if size < 0 {
+            return None;
+        }
+        let size = size as usize;
 
         value.resize(size, 0);
         if size > INITIAL {

@@ -18,8 +18,11 @@ func readDB(context unsafe.Pointer, keyPtr, keySize, valuePtr, valueSize, offset
 	fmt.Printf("read key [%s]\n", string(realKey))
 
 	var size int
-	realValue := store[string(realKey)]
-	size = len(realValue) // 如果key不存在 则size为0
+	realValue, exist := store[string(realKey)]
+	if !exist {
+		return -1 // 如果不存在，返回值小于0
+	}
+	size = len(realValue)
 
 	if offset >= int32(size) {
 		return 0

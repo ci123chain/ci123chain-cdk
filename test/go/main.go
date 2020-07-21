@@ -179,8 +179,9 @@ func ontologyContract() {
 		{"destroy_contract"},
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
-		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1 << 63 - 1)},
+		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1 << 63 - 1)}, //overflow
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
+		{"read_db", "不存在的key"}, //rust panic
 		{"这是一个无效的方法"},
 	}
 
