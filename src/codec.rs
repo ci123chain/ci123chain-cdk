@@ -1,7 +1,6 @@
 use crate::types::Error;
 
 use crate::prelude::{str, Cell, Vec};
-use crate::types::Address;
 
 pub struct Sink {
     buf: Vec<u8>,
@@ -66,9 +65,10 @@ impl Sink {
         self.write_raw_bytes(&buf);
     }
 
-    pub fn write_address(&mut self, addr: &Address) {
-        self.write_raw_bytes(addr.into_slice());
-    }
+    // #[allow(unused)]
+    // pub(crate) fn write_address(&mut self, addr: &Address) {
+    //     self.write_raw_bytes(addr.into_slice());
+    // }
 
     pub fn write_str(&mut self, string: &str) {
         self.write_bytes(string.as_bytes());
@@ -201,10 +201,10 @@ impl Source {
         )))
     }
 
-    pub fn read_address(&self) -> Result<Address, Error> {
-        let bytes = self.read_raw_bytes(Address::len())?;
-        Ok(Address::new(&clone_into_array(bytes)))
-    }
+    // pub fn read_address(&self) -> Result<Address, Error> {
+    //     let bytes = self.read_raw_bytes(Address::len())?;
+    //     Ok(Address::new(&clone_into_array(bytes)))
+    // }
 
     pub fn read_str(&self) -> Result<&str, Error> {
         let bytes = self.read_bytes()?;
