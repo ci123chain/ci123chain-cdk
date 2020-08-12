@@ -94,23 +94,11 @@ func (sink Sink) ReadBytes() ([]byte, int, error) {
 
 func (sink Sink) ReadString() (string, error) {
 	b, _, err := sink.ReadBytes()
-	if err != nil {
-		return "", err
-	}
-	if !utf8.Valid(b) {
+	if err == nil && !utf8.Valid(b) {
 		return "", errors.New("invalid utf8 string")
 	}
 
 	return string(b), err
-}
-
-func (sink Sink) ReadAddress() (*Address, error) {
-	b, _, err := sink.nextBytes(AddressSize)
-	if err != nil {
-		return nil, err
-	}
-	address := NewAddress(b)
-	return &address, nil
 }
 
 func (sink Sink) nextBytes(size int) ([]byte, int, error) {
