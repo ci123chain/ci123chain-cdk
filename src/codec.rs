@@ -94,7 +94,7 @@ pub struct Source {
 }
 
 impl Source {
-    pub(crate) fn new(data: Vec<u8>) -> Self {
+    pub fn new(data: Vec<u8>) -> Self {
         let length = data.len();
         Self {
             buf: data,
