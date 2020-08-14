@@ -18,4 +18,5 @@ pub mod prelude {
     pub use core::fmt::Write;
     pub use core::prelude::v1::*;
     pub use std::cell::Cell;
+    pub use std::panic;
 }

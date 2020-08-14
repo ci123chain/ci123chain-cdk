@@ -224,5 +224,5 @@ func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	var memory = instanceContext.Memory().Data()
 
 	data := memory[dataPtr : dataPtr+dataSize]
-	panic("panic: " + string(data))
+	panic("contract panic: " + string(data))
 }
