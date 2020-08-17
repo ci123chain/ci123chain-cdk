@@ -7,22 +7,7 @@ const INPUT_TOKEN: i32 = 0;
 
 pub fn make_dependencies() -> Dependencies {
     panic::set_hook(Box::new(|panic_info| {
-        let mut info = "panic occurred";
-        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
-            info = s;
-        }
-
-        if let Some(location) = panic_info.location() {
-            panic(&format!(
-                "{} in file '{}' at line {}, column {}",
-                info,
-                location.file(),
-                location.line(),
-                location.column(),
-            ));
-        } else {
-            panic(info);
-        }
+        panic(&panic_info.to_string());
     }));
     Dependencies {
         storage: Store::new(),
