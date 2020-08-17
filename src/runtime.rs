@@ -5,10 +5,17 @@ use crate::prelude::{panic, vec, Vec};
 
 const INPUT_TOKEN: i32 = 0;
 
+static mut PANIC_HOOK: bool = false;
+
 pub fn make_dependencies() -> Dependencies {
-    panic::set_hook(Box::new(|panic_info| {
-        panic(&panic_info.to_string());
-    }));
+    unsafe {
+        if PANIC_HOOK == false {
+            panic::set_hook(Box::new(|panic_info| {
+                panic(&panic_info.to_string());
+            }));
+            PANIC_HOOK = true;
+        }
+    };
     Dependencies {
         storage: Store::new(),
         api: ExternalApi::new(),
