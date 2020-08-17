@@ -9,6 +9,7 @@ package main
 // extern int send(void*, int, long long);
 // extern void get_creator(void*, int);
 // extern void get_invoker(void*, int);
+// extern void self_address(void*, int);
 // extern long long get_time(void*);
 //
 // extern int get_input_length(void*, int);
@@ -56,6 +57,11 @@ func get_creator(context unsafe.Pointer, creatorPtr int32) {
 //export get_invoker
 func get_invoker(context unsafe.Pointer, invokerPtr int32) {
 	getInvoker(context, invokerPtr)
+}
+
+//export self_address
+func self_address(context unsafe.Pointer, contractPtr int32) {
+	selfAddress(context, contractPtr)
 }
 
 //export get_time
@@ -135,6 +141,7 @@ func ontologyContract() {
 
 	_, _ = imports.Append("get_creator", get_creator, C.get_creator)
 	_, _ = imports.Append("get_invoker", get_invoker, C.get_invoker)
+	_, _ = imports.Append("self_address", self_address, C.self_address)
 	_, _ = imports.Append("get_time", get_time, C.get_time)
 
 	_, _ = imports.Append("get_input_length", get_input_length, C.get_input_length)
@@ -174,12 +181,13 @@ func ontologyContract() {
 		{"send", sendAddr.ToString(), uint64(7)},
 		{"get_creator"},
 		{"get_invoker"},
+		{"self_address"},
 		{"get_time"},
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
 		{"destroy_contract"},
 		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
-		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1 << 63 - 1)}, //overflow
+		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1<<63 - 1)}, //overflow
 		{"这是一个无效的方法"},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
 		{"read_db", "不存在的key"}, //rust panic

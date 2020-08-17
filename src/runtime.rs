@@ -173,6 +173,12 @@ impl<'a> ExternalApi {
         invoker
     }
 
+    pub fn self_address(&self) -> Address {
+        let contract = Address::zero();
+        unsafe { self_address(contract.as_ptr() as *mut u8) };
+        contract
+    }
+
     pub fn get_timestamp(&self) -> u64 {
         unsafe { get_time() }
     }
@@ -271,6 +277,7 @@ extern "C" {
     fn send(to_ptr: *const u8, amount: u64) -> bool;
     fn get_creator(creator_ptr: *mut u8);
     fn get_invoker(invoker_ptr: *mut u8);
+    fn self_address(contract_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
     fn destroy_contract();

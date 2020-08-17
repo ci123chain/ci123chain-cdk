@@ -52,6 +52,12 @@ pub fn invoke() {
                 data: invoker.to_hex_string().as_bytes(),
             }));
         }
+        "self_address" => {
+            let contract_address = deps.api.self_address();
+            return_contract(Ok(Response {
+                data: contract_address.to_hex_string().as_bytes(),
+            }));
+        }
         "get_time" => {
             let time_stamp = deps.api.get_timestamp();
             return_contract(Ok(Response {

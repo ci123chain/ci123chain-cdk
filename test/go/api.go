@@ -131,6 +131,16 @@ func getInvoker(context unsafe.Pointer, invokerPtr int32) {
 	copy(memory[invokerPtr:invokerPtr+AddressSize], creatorAddr[:])
 }
 
+func selfAddress(context unsafe.Pointer, contractPtr int32) {
+	contractAddress := Address{}
+	copy(contractAddress[:], "contract222222222222")
+
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	copy(memory[contractPtr:contractPtr+AddressSize], contractAddress[:])
+}
+
 func getTime(_ unsafe.Pointer) int64 {
 	now := time.Now() //blockHeader.Time
 	return now.Unix()
