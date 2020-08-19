@@ -5,8 +5,7 @@ use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, Response};
 
-#[cfg(debug_assertions)]
-use cdk::runtime::debug;
+use c123chain_cdk::debug;
 
 #[no_mangle]
 pub fn invoke() {
@@ -62,8 +61,7 @@ pub fn invoke() {
             }));
         }
         "get_pre_caller" => {
-            #[cfg(debug_assertions)]
-            debug(format!("debug message from contract"));
+            debug!("debug {} from contract", "message");
 
             let caller_address = deps.api.get_pre_caller();
             return_contract(Ok(Response {

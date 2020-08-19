@@ -22,11 +22,6 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
-#[cfg(debug_assertions)]
-pub fn debug(s: String) {
-    unsafe { debug_print(s.as_ptr(), s.len()) };
-}
-
 pub(crate) fn panic(data: &str) {
     unsafe {
         panic_contract(data.as_ptr(), data.len());
@@ -323,5 +318,17 @@ extern "C" {
     fn panic_contract(data_ptr: *const u8, data_size: usize);
 
     #[cfg(debug_assertions)]
-    fn debug_print(str_ptr: *const u8, str_size: usize);
+    pub fn debug_print(str_ptr: *const u8, str_size: usize);
+}
+
+#[macro_export]
+macro_rules! debug {
+    ($($arg:tt)*) => {
+        #[cfg(debug_assertions)]
+        {
+            use crate::runtime::debug_print;
+            let s = format!($($arg)*);
+            unsafe { debug_print(s.as_ptr(), s.len()) };
+        }
+    }
 }
