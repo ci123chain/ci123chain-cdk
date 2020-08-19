@@ -141,6 +141,16 @@ func selfAddress(context unsafe.Pointer, contractPtr int32) {
 	copy(memory[contractPtr:contractPtr+AddressSize], contractAddress[:])
 }
 
+func getPreCaller(context unsafe.Pointer, callerPtr int32) {
+	contractAddress := Address{}
+	copy(contractAddress[:], "caller11222222222222")
+
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	copy(memory[callerPtr:callerPtr+AddressSize], contractAddress[:])
+}
+
 func getTime(_ unsafe.Pointer) int64 {
 	now := time.Now() //blockHeader.Time
 	return now.Unix()
@@ -235,4 +245,12 @@ func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
 
 	data := memory[dataPtr : dataPtr+dataSize]
 	panic("contract panic: " + string(data))
+}
+
+func debugPrint(context unsafe.Pointer, msgPtr, msgSize int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	data := memory[msgPtr : msgPtr+msgSize]
+	println(string(data))
 }

@@ -22,6 +22,11 @@ pub fn make_dependencies() -> Dependencies {
     }
 }
 
+#[cfg(debug_assertions)]
+pub fn debug(s: String) {
+    unsafe { debug_print(s.as_ptr(), s.len()) };
+}
+
 pub(crate) fn panic(data: &str) {
     unsafe {
         panic_contract(data.as_ptr(), data.len());
@@ -153,36 +158,50 @@ impl<'a> ExternalApi {
         ExternalApi {}
     }
 
+    // 获取合约输入
     pub fn input(&self) -> Source {
         Source::new(self.get_input(INPUT_TOKEN))
     }
 
+    // 代币转账
     pub fn send(&self, to: &Address, amount: u64) -> bool {
         unsafe { send(to.as_ptr(), amount) }
     }
 
+    // 获取合约创建者(用户地址)
     pub fn get_creator(&self) -> Address {
         let creator = Address::zero();
         unsafe { get_creator(creator.as_ptr() as *mut u8) };
         creator
     }
 
+    // 获取合约调用者(用户地址)
     pub fn get_invoker(&self) -> Address {
         let invoker = Address::zero();
         unsafe { get_invoker(invoker.as_ptr() as *mut u8) };
         invoker
     }
 
+    // 获取合约调用者(用户地址或合约地址)
+    pub fn get_pre_caller(&self) -> Address {
+        let caller = Address::zero();
+        unsafe { get_pre_caller(caller.as_ptr() as *mut u8) };
+        caller
+    }
+
+    // 获取当前合约地址
     pub fn self_address(&self) -> Address {
         let contract = Address::zero();
         unsafe { self_address(contract.as_ptr() as *mut u8) };
         contract
     }
 
+    // 获取unix时间戳
     pub fn get_timestamp(&self) -> u64 {
         unsafe { get_time() }
     }
 
+    // 合约返回
     pub fn ret(&self, result: Result<Response, &'a str>) {
         match result {
             Ok(response) => {
@@ -196,11 +215,13 @@ impl<'a> ExternalApi {
         }
     }
 
+    // 事件通知
     pub fn notify(&self, event: &Event) {
         let raw = event.to_vec();
         unsafe { notify_contract(raw.as_ptr(), raw.len()) };
     }
 
+    // 调用合约
     pub fn call_contract(&self, addr: &Address, input: &[u8]) -> Option<Vec<u8>> {
         let addr_ptr = addr.as_ptr();
         let input_ptr = input.as_ptr();
@@ -212,10 +233,12 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
+    // 销毁本合约
     pub fn destroy_contract(&self) {
         unsafe { destroy_contract() }
     }
 
+    // 升级合约
     pub fn migrate_contract(
         &self,
         code: &[u8],
@@ -278,6 +301,7 @@ extern "C" {
     fn get_creator(creator_ptr: *mut u8);
     fn get_invoker(invoker_ptr: *mut u8);
     fn self_address(contract_ptr: *mut u8);
+    fn get_pre_caller(caller_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
     fn destroy_contract();
@@ -297,4 +321,7 @@ extern "C" {
         new_address_ptr: *mut u8,
     ) -> bool;
     fn panic_contract(data_ptr: *const u8, data_size: usize);
+
+    #[cfg(debug_assertions)]
+    fn debug_print(str_ptr: *const u8, str_size: usize);
 }

@@ -10,6 +10,7 @@ package main
 // extern void get_creator(void*, int);
 // extern void get_invoker(void*, int);
 // extern void self_address(void*, int);
+// extern void get_pre_caller(void*, int);
 // extern long long get_time(void*);
 //
 // extern int get_input_length(void*, int);
@@ -20,6 +21,8 @@ package main
 // extern void destroy_contract(void*);
 // extern int migrate_contract(void*, int, int, int, int, int, int, int, int, int, int, int, int, int);
 // extern void panic_contract(void*, int, int);
+//
+// extern void debug_print(void*, int, int);
 import "C"
 import (
 	"fmt"
@@ -62,6 +65,11 @@ func get_invoker(context unsafe.Pointer, invokerPtr int32) {
 //export self_address
 func self_address(context unsafe.Pointer, contractPtr int32) {
 	selfAddress(context, contractPtr)
+}
+
+//export get_pre_caller
+func get_pre_caller(context unsafe.Pointer, callerPtr int32) {
+	getPreCaller(context, callerPtr)
 }
 
 //export get_time
@@ -111,6 +119,11 @@ func panic_contract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	panicContract(context, dataPtr, dataSize)
 }
 
+//export debug_print
+func debug_print(context unsafe.Pointer, msgPtr, msgSize int32) {
+	debugPrint(context, msgPtr, msgSize)
+}
+
 var inputData = map[int32][]byte{}
 
 const (
@@ -142,6 +155,7 @@ func ontologyContract() {
 	_, _ = imports.Append("get_creator", get_creator, C.get_creator)
 	_, _ = imports.Append("get_invoker", get_invoker, C.get_invoker)
 	_, _ = imports.Append("self_address", self_address, C.self_address)
+	_, _ = imports.Append("get_pre_caller", get_pre_caller, C.get_pre_caller)
 	_, _ = imports.Append("get_time", get_time, C.get_time)
 
 	_, _ = imports.Append("get_input_length", get_input_length, C.get_input_length)
@@ -152,6 +166,8 @@ func ontologyContract() {
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 	_, _ = imports.Append("migrate_contract", migrate_contract, C.migrate_contract)
 	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
+
+	_, _ = imports.Append("debug_print", debug_print, C.debug_print)
 
 	code := getBytes()
 	module, err := wasm.Compile(code)
@@ -182,6 +198,7 @@ func ontologyContract() {
 		{"get_creator"},
 		{"get_invoker"},
 		{"self_address"},
+		{"get_pre_caller"},
 		{"get_time"},
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
 		{"destroy_contract"},
@@ -190,7 +207,7 @@ func ontologyContract() {
 		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1<<63 - 1)}, //overflow
 		{"这是一个无效的方法"},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例
-		{"read_db", "不存在的key"}, //rust panic
+		{"read_db", "不存在的key"},                             //rust panic
 	}
 
 	for _, param := range params {

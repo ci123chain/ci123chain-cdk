@@ -1,4 +1,5 @@
 use crate::types::Error;
+use crate::util::clone_into_array;
 
 use crate::prelude::{str, Cell, Vec};
 
@@ -223,16 +224,6 @@ impl Source {
         self.pos.set(new_pos);
         Ok(&self.buf[old_pos..new_pos])
     }
-}
-
-fn clone_into_array<A, T>(slice: &[T]) -> A
-where
-    A: Default + AsMut<[T]>,
-    T: Clone,
-{
-    let mut a = A::default();
-    <A as AsMut<[T]>>::as_mut(&mut a).clone_from_slice(slice);
-    a
 }
 
 pub(crate) fn from_hex_u8(c: u8) -> Result<u8, Error> {

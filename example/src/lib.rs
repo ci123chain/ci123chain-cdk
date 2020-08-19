@@ -5,6 +5,9 @@ use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, Response};
 
+#[cfg(debug_assertions)]
+use cdk::runtime::debug;
+
 #[no_mangle]
 pub fn invoke() {
     let deps = runtime::make_dependencies();
@@ -56,6 +59,15 @@ pub fn invoke() {
             let contract_address = deps.api.self_address();
             return_contract(Ok(Response {
                 data: contract_address.to_hex_string().as_bytes(),
+            }));
+        }
+        "get_pre_caller" => {
+            #[cfg(debug_assertions)]
+            debug(format!("debug message from contract"));
+
+            let caller_address = deps.api.get_pre_caller();
+            return_contract(Ok(Response {
+                data: caller_address.to_hex_string().as_bytes(),
             }));
         }
         "get_time" => {

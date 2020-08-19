@@ -2,6 +2,7 @@ pub mod codec;
 pub mod math;
 pub mod runtime;
 pub mod types;
+pub mod util;
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
