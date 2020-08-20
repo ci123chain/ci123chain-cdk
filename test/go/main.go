@@ -19,7 +19,6 @@ package main
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
 // extern void destroy_contract(void*);
-// extern int migrate_contract(void*, int, int, int, int, int, int, int, int, int, int, int, int, int);
 // extern void panic_contract(void*, int, int);
 //
 // extern void debug_print(void*, int, int);
@@ -102,13 +101,6 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
-//export migrate_contract
-func migrate_contract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
-	authorPtr, authorSize, emailPtr, emailSize, descPtr, descSize, newAddrPtr int32) int32 {
-	return migrateContract(context, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
-		authorPtr, authorSize, emailPtr, emailSize, descPtr, descSize, newAddrPtr)
-}
-
 //export destroy_contract
 func destroy_contract(context unsafe.Pointer) {
 	destroyContract(context)
@@ -164,7 +156,6 @@ func ontologyContract() {
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
-	_, _ = imports.Append("migrate_contract", migrate_contract, C.migrate_contract)
 	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
 
 	_, _ = imports.Append("debug_print", debug_print, C.debug_print)
@@ -202,7 +193,6 @@ func ontologyContract() {
 		{"get_time"},
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
 		{"destroy_contract"},
-		{"migrate_contract", code, "demo", "v0.0.1", "me", "email", "description"},
 		{"notify"},
 		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1<<63 - 1)}, //overflow
 		{"这是一个无效的方法"},

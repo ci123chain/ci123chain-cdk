@@ -233,40 +233,6 @@ impl<'a> ExternalApi {
         unsafe { destroy_contract() }
     }
 
-    // 升级合约
-    pub fn migrate_contract(
-        &self,
-        code: &[u8],
-        name: &str,
-        version: &str,
-        author: &str,
-        email: &str,
-        desc: &str,
-    ) -> Option<Address> {
-        let mut addr = Address::zero();
-        let ok = unsafe {
-            migrate_contract(
-                code.as_ptr(),
-                code.len(),
-                name.as_ptr(),
-                name.len(),
-                version.as_ptr(),
-                version.len(),
-                author.as_ptr(),
-                author.len(),
-                email.as_ptr(),
-                email.len(),
-                desc.as_ptr(),
-                desc.len(),
-                addr.as_mut_ptr(),
-            )
-        };
-        if !ok {
-            return None;
-        }
-        Some(addr)
-    }
-
     fn get_input(&self, token: i32) -> Vec<u8> {
         let input_size = unsafe { get_input_length(token) };
         let input: Vec<u8> = vec![0; input_size];
@@ -300,21 +266,6 @@ extern "C" {
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
     fn destroy_contract();
-    fn migrate_contract(
-        code_ptr: *const u8,
-        code_size: usize,
-        name_ptr: *const u8,
-        name_size: usize,
-        ver_ptr: *const u8,
-        ver_size: usize,
-        author_ptr: *const u8,
-        author_size: usize,
-        email_ptr: *const u8,
-        email_size: usize,
-        desc_ptr: *const u8,
-        desc_size: usize,
-        new_address_ptr: *mut u8,
-    ) -> bool;
     fn panic_contract(data_ptr: *const u8, data_size: usize);
 
     #[cfg(debug_assertions)]

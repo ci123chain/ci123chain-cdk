@@ -214,31 +214,6 @@ func destroyContract(_ unsafe.Pointer) {
 	fmt.Println("destroy contract")
 }
 
-func migrateContract(context unsafe.Pointer, codePtr, codeSize, namePtr, nameSize, verPtr, verSize,
-	authorPtr, authorSize, emailPtr, emailSize, descPtr, descSize, newAddrPtr int32) int32 {
-	var instanceContext = wasm.IntoInstanceContext(context)
-	var memory = instanceContext.Memory().Data()
-
-	var code, name, version, author, email, desc = memory[codePtr : codePtr+codeSize],
-		memory[namePtr : namePtr+nameSize],
-		memory[verPtr : verPtr+verSize],
-		memory[authorPtr : authorPtr+authorSize],
-		memory[emailPtr : emailPtr+emailSize],
-		memory[descPtr : descPtr+descSize]
-
-	fmt.Printf("code len: %d\n", len(code))
-	fmt.Printf("name: %s\n", string(name)) //实际需要判断utf8, 下同
-	fmt.Printf("version: %s\n", string(version))
-	fmt.Printf("author: %s\n", string(author))
-	fmt.Printf("email: %s\n", string(email))
-	fmt.Printf("desc: %s\n", string(desc))
-
-	var addr = memory[newAddrPtr : newAddrPtr+AddressSize]
-	copy(addr, "contract000000000002")
-
-	return 1 // bool
-}
-
 func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()

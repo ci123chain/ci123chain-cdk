@@ -25,4 +25,4 @@
         └── store.go    # go 层 store
 ```
 
-函数原型定义可以查看 `src/runtime.rs` 文件的最后部分，其中 `send` 和 `migrate_contract` 返回 `bool` ，在 go 层需要返回 `1 (true)` 或者 `0 (false)`。
+函数原型定义可以查看 `src/runtime.rs` 文件的最后部分，其中 `send` 返回 `bool` ，在 go 层需要返回 `1 (true)` 或者 `0 (false)`。

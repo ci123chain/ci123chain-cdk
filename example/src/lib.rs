@@ -88,23 +88,6 @@ pub fn invoke() {
                 data: "success".as_bytes(),
             }));
         }
-        "migrate_contract" => {
-            let code = input.read_bytes().unwrap();
-            let name = input.read_str().unwrap();
-            let version = input.read_str().unwrap();
-            let author = input.read_str().unwrap();
-            let email = input.read_str().unwrap();
-            let desc = input.read_str().unwrap();
-            match deps
-                .api
-                .migrate_contract(code, name, version, author, email, desc)
-            {
-                Some(addr) => return_contract(Ok(Response {
-                    data: addr.into_slice(),
-                })),
-                None => return_contract(Err("migrate contract error")),
-            }
-        }
         "mul" => {
             let a = input.read_u128().unwrap();
             let b = input.read_u128().unwrap();
