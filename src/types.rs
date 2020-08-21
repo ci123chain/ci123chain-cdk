@@ -46,10 +46,6 @@ impl Address {
         Address(*addr)
     }
 
-    pub fn zero() -> Address {
-        Address([0; ADDR_SIZE])
-    }
-
     pub fn len() -> usize {
         ADDR_SIZE
     }

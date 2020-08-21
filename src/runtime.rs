@@ -165,28 +165,28 @@ impl<'a> ExternalApi {
 
     // 获取合约创建者(用户地址)
     pub fn get_creator(&self) -> Address {
-        let creator = Address::zero();
+        let creator = Address::default();
         unsafe { get_creator(creator.as_ptr() as *mut u8) };
         creator
     }
 
     // 获取合约调用者(用户地址)
     pub fn get_invoker(&self) -> Address {
-        let invoker = Address::zero();
+        let invoker = Address::default();
         unsafe { get_invoker(invoker.as_ptr() as *mut u8) };
         invoker
     }
 
     // 获取合约调用者(用户地址或合约地址)
     pub fn get_pre_caller(&self) -> Address {
-        let caller = Address::zero();
+        let caller = Address::default();
         unsafe { get_pre_caller(caller.as_ptr() as *mut u8) };
         caller
     }
 
     // 获取当前合约地址
     pub fn self_address(&self) -> Address {
-        let contract = Address::zero();
+        let contract = Address::default();
         unsafe { self_address(contract.as_ptr() as *mut u8) };
         contract
     }
