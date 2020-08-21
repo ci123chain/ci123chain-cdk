@@ -67,7 +67,11 @@ impl Address {
         ADDR_SIZE
     }
 
-    pub fn into_slice(&self) -> &[u8] {
+    pub fn as_ref(&self) -> &[u8; ADDR_SIZE] {
+        &self.0
+    }
+
+    pub fn as_slice(&self) -> &[u8] {
         &self.0[..]
     }
 
