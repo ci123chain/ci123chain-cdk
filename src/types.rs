@@ -3,8 +3,8 @@ use crate::runtime::panic;
 
 use crate::prelude::{String, Vec, Write};
 
-const ADDR_SIZE: usize = 20;
-const ADDR_HEX_SIZE: usize = 42;
+pub const ADDR_SIZE: usize = 20;
+pub const ADDR_HEX_SIZE: usize = 42;
 
 #[derive(Clone, Default, Debug, PartialEq)]
 pub struct Address([u8; ADDR_SIZE]);
