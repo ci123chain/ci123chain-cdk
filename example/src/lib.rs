@@ -1,5 +1,6 @@
 extern crate c123chain_cdk as cdk;
 
+use cdk::codec::Source;
 use cdk::math;
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
@@ -11,6 +12,7 @@ use c123chain_cdk::debug;
 pub fn invoke() {
     let deps = runtime::make_dependencies();
     let input = deps.api.input();
+    let input = Source::new(&input);
     let method = input.read_str().unwrap();
     match method {
         "read_db" => {

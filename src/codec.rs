@@ -88,20 +88,28 @@ impl Sink {
     }
 }
 
-pub struct Source {
-    buf: Vec<u8>,
+pub struct Source<'a> {
+    buf: &'a [u8],
     pos: Cell<usize>,
     size: usize,
 }
 
-impl Source {
-    pub fn new(data: Vec<u8>) -> Self {
+impl<'a> Source<'a> {
+    pub fn new(data: &'a [u8]) -> Self {
         let length = data.len();
         Self {
             buf: data,
             pos: Cell::new(0),
             size: length,
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.buf.is_empty()
+    }
+
+    pub fn is_eof(&self) -> bool {
+        self.pos.get() >= self.size
     }
 
     pub fn read_byte(&self) -> Result<u8, Error> {

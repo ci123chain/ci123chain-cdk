@@ -1,4 +1,4 @@
-use crate::codec::{Sink, Source};
+use crate::codec::Sink;
 use crate::types::{Address, ContractResult, Response};
 
 use crate::prelude::{panic, vec, Vec};
@@ -154,8 +154,8 @@ impl<'a> ExternalApi {
     }
 
     // 获取合约输入
-    pub fn input(&self) -> Source {
-        Source::new(self.get_input(INPUT_TOKEN))
+    pub fn input(&self) -> Vec<u8> {
+        self.get_input(INPUT_TOKEN)
     }
 
     // 代币转账
