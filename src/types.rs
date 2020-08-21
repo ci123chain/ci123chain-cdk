@@ -41,6 +41,23 @@ impl From<&str> for Address {
     }
 }
 
+impl ToString for Address {
+    fn to_string(&self) -> String {
+        let mut s = String::with_capacity(self.0.len() * 2 + 2);
+        s += "0x";
+        for v in self.0.iter() {
+            write!(s, "{:02x}", *v).unwrap();
+        }
+        s
+    }
+}
+
+impl Into<[u8; ADDR_SIZE]> for Address {
+    fn into(self) -> [u8; ADDR_SIZE] {
+        self.0
+    }
+}
+
 impl Address {
     pub fn new(addr: &[u8; ADDR_SIZE]) -> Address {
         Address(*addr)
@@ -50,21 +67,8 @@ impl Address {
         ADDR_SIZE
     }
 
-    pub fn into(&self) -> [u8; ADDR_SIZE] {
-        self.0
-    }
-
     pub fn into_slice(&self) -> &[u8] {
         &self.0[..]
-    }
-
-    pub fn to_hex_string(&self) -> String {
-        let mut s = String::with_capacity(self.0.len() * 2 + 2);
-        s += "0x";
-        for v in self.0.iter() {
-            write!(s, "{:02x}", *v).unwrap();
-        }
-        s
     }
 
     pub fn as_ptr(&self) -> *const u8 {

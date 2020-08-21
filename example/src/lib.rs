@@ -47,19 +47,19 @@ pub fn invoke() {
         "get_creator" => {
             let creator = deps.api.get_creator();
             return_contract(Ok(Response {
-                data: creator.to_hex_string().as_bytes(),
+                data: creator.to_string().as_bytes(),
             }));
         }
         "get_invoker" => {
             let invoker = deps.api.get_invoker();
             return_contract(Ok(Response {
-                data: invoker.to_hex_string().as_bytes(),
+                data: invoker.to_string().as_bytes(),
             }));
         }
         "self_address" => {
             let contract_address = deps.api.self_address();
             return_contract(Ok(Response {
-                data: contract_address.to_hex_string().as_bytes(),
+                data: contract_address.to_string().as_bytes(),
             }));
         }
         "get_pre_caller" => {
@@ -67,7 +67,7 @@ pub fn invoke() {
 
             let caller_address = deps.api.get_pre_caller();
             return_contract(Ok(Response {
-                data: caller_address.to_hex_string().as_bytes(),
+                data: caller_address.to_string().as_bytes(),
             }));
         }
         "get_time" => {
