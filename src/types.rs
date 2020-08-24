@@ -53,6 +53,14 @@ impl ToString for Address {
 }
 
 impl Into<[u8; ADDR_SIZE]> for Address {
+    /// 取出Address内部的数组表示
+    ///
+    /// ```
+    /// use c123chain_cdk::types::{Address, ADDR_SIZE};
+    /// let address = Address::default();
+    /// let array: [u8; ADDR_SIZE] = address.into();
+    /// let array_ref = &array;
+    /// ```
     fn into(self) -> [u8; ADDR_SIZE] {
         self.0
     }
@@ -67,11 +75,7 @@ impl Address {
         ADDR_SIZE
     }
 
-    pub fn as_ref(&self) -> &[u8; ADDR_SIZE] {
-        &self.0
-    }
-
-    pub fn as_slice(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         &self.0[..]
     }
 
