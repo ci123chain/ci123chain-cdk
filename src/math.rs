@@ -1,122 +1,134 @@
 use crate::runtime::panic;
 
-pub trait OverflowingAdd<T> {
-    fn try_overflowing_add(&self, _: T) -> (T, bool);
+pub trait SafeAdd<T> {
+    fn safe_add(&self, _: T) -> T;
 }
 
-pub trait OverflowingSub<T> {
-    fn try_overflowing_sub(&self, _: T) -> (T, bool);
+pub trait SafeSub<T> {
+    fn safe_sub(&self, _: T) -> T;
 }
 
-pub trait OverflowingMul<T> {
-    fn try_overflowing_mul(&self, _: T) -> (T, bool);
+pub trait SafeMul<T> {
+    fn safe_mul(&self, _: T) -> T;
 }
 
-pub trait OverflowingDiv<T> {
-    fn try_overflowing_div(&self, _: T) -> (T, bool);
+pub trait SafeDiv<T> {
+    fn safe_div(&self, _: T) -> T;
 }
 
-macro_rules! impl_overflowing_add {
+macro_rules! impl_safe_add {
     ($t:ty) => {
-        impl OverflowingAdd<$t> for $t {
-            fn try_overflowing_add(&self, n: $t) -> ($t, bool) {
-                self.overflowing_add(n)
+        impl SafeAdd<$t> for $t
+        where
+            $t: Default + PartialEq,
+        {
+            fn safe_add(&self, n: $t) -> $t {
+                let (result, overflow) = self.overflowing_add(n);
+                if overflow {
+                    panic("add overflow");
+                }
+                result
             }
         }
     };
 }
 
-macro_rules! impl_overflowing_sub {
+macro_rules! impl_safe_sub {
     ($t:ty) => {
-        impl OverflowingSub<$t> for $t {
-            fn try_overflowing_sub(&self, n: $t) -> ($t, bool) {
-                self.overflowing_sub(n)
+        impl SafeSub<$t> for $t
+        where
+            $t: Default + PartialEq,
+        {
+            fn safe_sub(&self, n: $t) -> $t {
+                let (result, overflow) = self.overflowing_sub(n);
+                if overflow {
+                    panic("subtract overflow");
+                }
+                result
             }
         }
     };
 }
 
-macro_rules! impl_overflowing_mul {
+macro_rules! impl_safe_mul {
     ($t:ty) => {
-        impl OverflowingMul<$t> for $t {
-            fn try_overflowing_mul(&self, n: $t) -> ($t, bool) {
-                self.overflowing_mul(n)
+        impl SafeMul<$t> for $t
+        where
+            $t: Default + PartialEq,
+        {
+            fn safe_mul(&self, n: $t) -> $t {
+                let (result, overflow) = self.overflowing_mul(n);
+                if overflow {
+                    panic("multiply overflow");
+                }
+                result
             }
         }
     };
 }
 
-macro_rules! impl_overflowing_div {
+macro_rules! impl_safe_div {
     ($t:ty) => {
-        impl OverflowingDiv<$t> for $t {
-            fn try_overflowing_div(&self, n: $t) -> ($t, bool) {
-                self.overflowing_div(n)
+        impl SafeDiv<$t> for $t
+        where
+            $t: Default + PartialEq,
+        {
+            fn safe_div(&self, n: $t) -> $t {
+                if <$t>::default().eq(&n) {
+                    panic("divide by zero");
+                }
+                let (result, overflow) = self.overflowing_div(n);
+                if overflow {
+                    panic("divide overflow");
+                }
+                result
             }
         }
     };
 }
 
-macro_rules! impl_overflowing {
+macro_rules! impl_safe {
     ($t:ty) => {
-        impl_overflowing_add!($t);
-        impl_overflowing_sub!($t);
-        impl_overflowing_mul!($t);
-        impl_overflowing_div!($t);
+        impl_safe_add!($t);
+        impl_safe_sub!($t);
+        impl_safe_mul!($t);
+        impl_safe_div!($t);
     };
 }
 
-impl_overflowing!(u8);
-impl_overflowing!(i8);
-impl_overflowing!(u32);
-impl_overflowing!(i32);
-impl_overflowing!(u64);
-impl_overflowing!(i64);
-impl_overflowing!(u128);
-impl_overflowing!(i128);
+impl_safe!(u8);
+impl_safe!(i8);
+impl_safe!(u32);
+impl_safe!(i32);
+impl_safe!(u64);
+impl_safe!(i64);
+impl_safe!(u128);
+impl_safe!(i128);
 
 pub fn safe_add<T>(x: T, y: T) -> T
 where
-    T: Copy + OverflowingAdd<T>,
+    T: Copy + SafeAdd<T>,
 {
-    let (result, overflow) = x.try_overflowing_add(y);
-    if overflow {
-        panic("add overflow");
-    }
-    result
+    x.safe_add(y)
 }
 
 pub fn safe_sub<T>(x: T, y: T) -> T
 where
-    T: Copy + OverflowingSub<T>,
+    T: Copy + SafeSub<T>,
 {
-    let (result, overflow) = x.try_overflowing_sub(y);
-    if overflow {
-        panic("subtract overflow");
-    }
-    result
+    x.safe_sub(y)
 }
 
 pub fn safe_mul<T>(x: T, y: T) -> T
 where
-    T: Copy + OverflowingMul<T>,
+    T: Copy + SafeMul<T>,
 {
-    let (result, overflow) = x.try_overflowing_mul(y);
-    if overflow {
-        panic("multiply overflow");
-    }
-    result
+    x.safe_mul(y)
 }
 
 pub fn safe_div<T>(x: T, y: T) -> T
 where
-    T: Copy + Default + PartialEq + OverflowingDiv<T>,
+    T: Copy + SafeDiv<T>,
 {
-    if T::default().eq(&y) {
-        panic("divide by zero");
-    }
-    let (result, overflow) = x.try_overflowing_div(y);
-    if overflow {
-        panic("divide overflow");
-    }
-    result
+    x.safe_div(y)
 }
