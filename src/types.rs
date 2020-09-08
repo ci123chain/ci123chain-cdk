@@ -7,7 +7,7 @@ use crate::prelude::{Deserialize, Serialize, String, Vec, Write};
 pub const ADDR_SIZE: usize = 20;
 pub const ADDR_HEX_SIZE: usize = 42;
 
-#[derive(Clone, Default, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Deserialize, Serialize)]
 pub struct Address([u8; ADDR_SIZE]);
 
 impl From<&str> for Address {
