@@ -93,7 +93,7 @@ pub fn invoke() {
         "mul" => {
             let a = input.read_u128().unwrap();
             let b = input.read_u128().unwrap();
-            let r = math::safe_mul_u128(a, b);
+            let r = math::safe_mul(a, b);
             return_contract(Ok(Response {
                 data: r.to_string().as_bytes(),
             }));
