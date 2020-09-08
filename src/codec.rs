@@ -79,7 +79,7 @@ impl Sink {
         self.buf.extend_from_slice(data);
     }
 
-    pub fn bytes(&self) -> &[u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         &self.buf
     }
 

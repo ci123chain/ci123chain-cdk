@@ -1,5 +1,6 @@
 use crate::codec::{from_hex_u8, Sink};
 use crate::runtime::panic;
+use crate::util::clone_into_array;
 
 use crate::prelude::{Deserialize, Serialize, String, Vec, Write};
 
@@ -37,7 +38,7 @@ impl From<&str> for Address {
             i += 1;
             j += 2;
         }
-        Self::new(&addr)
+        Self::new(&addr).unwrap()
     }
 }
 
@@ -67,8 +68,12 @@ impl Into<[u8; ADDR_SIZE]> for Address {
 }
 
 impl Address {
-    pub fn new(addr: &[u8; ADDR_SIZE]) -> Address {
-        Address(*addr)
+    pub fn new(addr: &[u8]) -> Option<Address> {
+        if addr.len() != ADDR_SIZE {
+            None
+        } else {
+            Some(Address(clone_into_array(addr)))
+        }
     }
 
     pub fn len() -> usize {
