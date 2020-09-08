@@ -84,7 +84,7 @@ pub struct Store {
 
 impl Store {
     fn new() -> Store {
-        Store { prefix: "test-" }
+        Store { prefix: "" }
     }
 
     pub fn set(&self, key: &[u8], value: &[u8]) {
