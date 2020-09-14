@@ -20,6 +20,8 @@ package main
 // extern int call_contract(void*, int, int, int);
 // extern void destroy_contract(void*);
 // extern void panic_contract(void*, int, int);
+// extern void get_validator_power(void*, int, int, int);
+// extern long long total_power(void*);
 //
 // extern void debug_print(void*, int, int);
 import "C"
@@ -111,6 +113,16 @@ func panic_contract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	panicContract(context, dataPtr, dataSize)
 }
 
+//export get_validator_power
+func get_validator_power(context unsafe.Pointer, dataPtr, dataSize, valuePtr int32) {
+	getValidatorPower(context, dataPtr, dataSize, valuePtr)
+}
+
+//export total_power
+func total_power(context unsafe.Pointer) int64 {
+	return totalPower(context)
+}
+
 //export debug_print
 func debug_print(context unsafe.Pointer, msgPtr, msgSize int32) {
 	debugPrint(context, msgPtr, msgSize)
@@ -158,6 +170,9 @@ func ontologyContract() {
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
 
+	_, _ = imports.Append("get_validator_power", get_validator_power, C.get_validator_power)
+	_, _ = imports.Append("total_power", total_power, C.total_power)
+
 	_, _ = imports.Append("debug_print", debug_print, C.debug_print)
 
 	code := getBytes()
@@ -194,6 +209,8 @@ func ontologyContract() {
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
 		{"destroy_contract"},
 		{"notify"},
+		{"get_validator_power"},
+		{"total_power"},
 		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1<<63 - 1)}, //overflow
 		{"这是一个无效的方法"},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例

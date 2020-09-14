@@ -222,6 +222,49 @@ func panicContract(context unsafe.Pointer, dataPtr, dataSize int32) {
 	panic("contract panic: " + string(data))
 }
 
+func getValidatorPower(context unsafe.Pointer, dataPtr, dataSize, valuePtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	source := NewSink(memory[dataPtr : dataPtr+dataSize])
+
+	var validators []Address
+	{
+		length, err := source.ReadU32()
+		if err != nil {
+			panic(err)
+		}
+		validators = make([]Address, 0, length)
+		var i uint32 = 0
+		for ; i < length; i++ {
+			bytes, _, err := source.ReadBytes()
+			if err != nil {
+				panic(err)
+			}
+			validators = append(validators, NewAddress(bytes))
+		}
+	}
+
+	//根据链上信息返回验证者的 delegate shares
+	value := make([]uint64, len(validators))
+	for i := range value {
+		value[i] = uint64(i)
+	}
+
+	sink := NewSink([]byte{})
+	for i := range value {
+		sink.WriteU64(value[i])
+	}
+
+	res := sink.Bytes()
+	copy(memory[valuePtr:int(valuePtr)+len(res)], res)
+}
+
+func totalPower(_ unsafe.Pointer) int64 {
+	//根据链上信息返回总权益
+	return 123456789
+}
+
 func debugPrint(context unsafe.Pointer, msgPtr, msgSize int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()

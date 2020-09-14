@@ -84,12 +84,12 @@ pub fn invoke() {
                 None => return_contract(Err("call contract error")),
             }
         }
-        "destroy_contract" => {
-            deps.api.destroy_contract();
-            return_contract(Ok(Response {
-                data: "success".as_bytes(),
-            }));
-        }
+        // "destroy_contract" => {
+        //     deps.api.destroy_contract();
+        //     return_contract(Ok(Response {
+        //         data: "success".as_bytes(),
+        //     }));
+        // }
         "mul" => {
             let a = input.read_u128().unwrap();
             let b = input.read_u128().unwrap();
@@ -102,6 +102,23 @@ pub fn invoke() {
             event("event type", "event msg");
             return_contract(Ok(Response {
                 data: "success".as_bytes(),
+            }));
+        }
+        "get_validator_power" => {
+            let validators = [
+                &Address::default(),
+                &Address::default(),
+                &Address::default(),
+            ];
+            let power = deps.api.get_validator_power(&validators);
+            return_contract(Ok(Response {
+                data: format!("{:?}", power).as_bytes(),
+            }));
+        }
+        "total_power" => {
+            let total_power = deps.api.total_power();
+            return_contract(Ok(Response {
+                data: total_power.to_string().as_bytes(),
             }));
         }
         _ => {

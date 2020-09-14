@@ -191,7 +191,7 @@ impl<'a> ExternalApi {
         contract
     }
 
-    // 获取unix时间戳
+    // 获取当前block header时间戳
     pub fn get_timestamp(&self) -> u64 {
         unsafe { get_time() }
     }
@@ -228,9 +228,32 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
-    // 销毁本合约
-    pub fn destroy_contract(&self) {
-        unsafe { destroy_contract() }
+    // // 销毁本合约
+    // pub fn destroy_contract(&self) {
+    //     unsafe { destroy_contract() }
+    // }
+
+    // 获取指定验证者的权益
+    pub fn get_validator_power(&self, validators: &[&Address]) -> Vec<u64> {
+        let mut sink = Sink::new(0);
+        sink.write_usize(validators.len());
+        for &validator in validators.iter() {
+            sink.write_bytes(validator.as_bytes());
+        }
+        let mut power = vec![0u64; validators.len()];
+        unsafe {
+            get_validator_power(
+                sink.as_bytes().as_ptr(),
+                sink.as_bytes().len(),
+                power.as_mut_ptr() as *mut u8,
+            )
+        };
+        power
+    }
+
+    // 获取所有验证者的权益之和
+    pub fn total_power(&self) -> u64 {
+        unsafe { total_power() }
     }
 
     fn get_input(&self, token: i32) -> Vec<u8> {
@@ -265,8 +288,10 @@ extern "C" {
     fn get_pre_caller(caller_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
-    fn destroy_contract();
+    // fn destroy_contract();
     fn panic_contract(data_ptr: *const u8, data_size: usize);
+    fn get_validator_power(data_ptr: *const u8, data_size: usize, value_ptr: *mut u8);
+    fn total_power() -> u64;
 
     #[cfg(debug_assertions)]
     pub fn debug_print(str_ptr: *const u8, str_size: usize);
