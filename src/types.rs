@@ -40,7 +40,10 @@ impl<'de> Deserialize<'de> for Address {
             where
                 E: SerdeError,
             {
-                Ok(Address::from(unsafe { str::from_utf8_unchecked(value) }))
+                match Address::from_bytes(value) {
+                    Ok(a) => Ok(a),
+                    Err(e) => Err(E::custom(e)),
+                }
             }
         }
         deserializer.deserialize_bytes(AddressVisitor)
@@ -49,33 +52,25 @@ impl<'de> Deserialize<'de> for Address {
 
 impl From<&str> for Address {
     fn from(s: &str) -> Self {
-        if s.len() != ADDR_HEX_SIZE {
-            panic("invalid address string length");
-        }
-        if &s[0..2] != "0x" {
-            panic("unexpected address string prefix")
-        }
-        let raw = s.as_bytes();
-        let mut addr = [0 as u8; ADDR_SIZE];
-        let (mut i, mut j) = (0, 3);
-        while j < s.len() {
-            let panic_err = "unexpected base64 char";
-            let (mut a, mut b) = (0, 0);
-            let res = from_hex_u8(raw[j - 1]);
-            match res {
-                Ok(c) => a = c,
-                Err(_) => panic(panic_err),
+        match Address::from_str(s) {
+            Ok(a) => a,
+            Err(e) => {
+                panic(e);
+                Address::default()
             }
-            let res = from_hex_u8(raw[j]);
-            match res {
-                Ok(c) => b = c,
-                Err(_) => panic(panic_err),
-            }
-            addr[i] = (a << 4) | b;
-            i += 1;
-            j += 2;
         }
-        Self::new(&addr).unwrap()
+    }
+}
+
+impl From<&[u8]> for Address {
+    fn from(b: &[u8]) -> Self {
+        match Address::from_bytes(b) {
+            Ok(a) => a,
+            Err(e) => {
+                panic(e);
+                Address::default()
+            }
+        }
     }
 }
 
@@ -115,6 +110,39 @@ impl Address {
 
     pub fn len() -> usize {
         ADDR_SIZE
+    }
+
+    pub(crate) fn from_bytes(raw: &[u8]) -> Result<Address, &str> {
+        if raw.len() != ADDR_HEX_SIZE {
+            return Err("unexpected address string length");
+        }
+        if &raw[0..2] != &[48, 120] {
+            return Err("unexpected address string prefix");
+        }
+        let mut addr = [0 as u8; ADDR_SIZE];
+        let (mut i, mut j) = (0, 3);
+        while j < raw.len() {
+            let e = "unexpected hex encoding char";
+            let (a, b);
+            let res = from_hex_u8(raw[j - 1]);
+            match res {
+                Ok(c) => a = c,
+                Err(_) => return Err(e),
+            }
+            let res = from_hex_u8(raw[j]);
+            match res {
+                Ok(c) => b = c,
+                Err(_) => return Err(e),
+            }
+            addr[i] = (a << 4) | b;
+            i += 1;
+            j += 2;
+        }
+        Ok(Self::new(&addr).unwrap())
+    }
+
+    pub fn from_str(s: &str) -> Result<Address, &str> {
+        Address::from_bytes(s.as_bytes())
     }
 
     pub fn as_bytes(&self) -> &[u8] {
