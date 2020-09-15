@@ -2,13 +2,50 @@ use crate::codec::{from_hex_u8, Sink};
 use crate::runtime::panic;
 use crate::util::clone_into_array;
 
-use crate::prelude::{Deserialize, Serialize, String, Vec, Write};
+use crate::prelude::{
+    fmt, Deserialize, Deserializer, Error as SerdeError, Serialize, Serializer, String, Vec,
+    Visitor, Write,
+};
 
 pub const ADDR_SIZE: usize = 20;
 pub const ADDR_HEX_SIZE: usize = 42;
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Deserialize, Serialize, Hash, Eq)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Hash, Eq)]
 pub struct Address([u8; ADDR_SIZE]);
+
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct AddressVisitor;
+
+        impl<'de> Visitor<'de> for AddressVisitor {
+            type Value = Address;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Address")
+            }
+
+            fn visit_str<E>(self, value: &str) -> Result<Address, E>
+            where
+                E: SerdeError,
+            {
+                Ok(Address::from(value))
+            }
+        }
+        deserializer.deserialize_bytes(AddressVisitor)
+    }
+}
 
 impl From<&str> for Address {
     fn from(s: &str) -> Self {
