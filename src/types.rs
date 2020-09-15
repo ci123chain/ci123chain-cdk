@@ -3,7 +3,7 @@ use crate::runtime::panic;
 use crate::util::clone_into_array;
 
 use crate::prelude::{
-    fmt, Deserialize, Deserializer, Error as SerdeError, Serialize, Serializer, String, Vec,
+    fmt, str, Deserialize, Deserializer, Error as SerdeError, Serialize, Serializer, String, Vec,
     Visitor, Write,
 };
 
@@ -36,11 +36,11 @@ impl<'de> Deserialize<'de> for Address {
                 formatter.write_str("Address")
             }
 
-            fn visit_str<E>(self, value: &str) -> Result<Address, E>
+            fn visit_bytes<E>(self, value: &[u8]) -> Result<Address, E>
             where
                 E: SerdeError,
             {
-                Ok(Address::from(value))
+                Ok(Address::from(unsafe { str::from_utf8_unchecked(value) }))
             }
         }
         deserializer.deserialize_bytes(AddressVisitor)
