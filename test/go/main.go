@@ -11,7 +11,7 @@ package main
 // extern void get_invoker(void*, int);
 // extern void self_address(void*, int);
 // extern void get_pre_caller(void*, int);
-// extern long long get_time(void*);
+// extern void get_block_header(void*, int);
 //
 // extern int get_input_length(void*, int);
 // extern void get_input(void*, int, int, int);
@@ -21,7 +21,7 @@ package main
 // extern void destroy_contract(void*);
 // extern void panic_contract(void*, int, int);
 // extern void get_validator_power(void*, int, int, int);
-// extern long long total_power(void*);
+// extern void total_power(void*, int);
 //
 // extern void debug_print(void*, int, int);
 import "C"
@@ -73,9 +73,9 @@ func get_pre_caller(context unsafe.Pointer, callerPtr int32) {
 	getPreCaller(context, callerPtr)
 }
 
-//export get_time
-func get_time(context unsafe.Pointer) int64 {
-	return getTime(context)
+//export get_block_header
+func get_block_header(context unsafe.Pointer, valuePtr int32) {
+	getBlockHeader(context, valuePtr)
 }
 
 //export get_input_length
@@ -119,8 +119,8 @@ func get_validator_power(context unsafe.Pointer, dataPtr, dataSize, valuePtr int
 }
 
 //export total_power
-func total_power(context unsafe.Pointer) int64 {
-	return totalPower(context)
+func total_power(context unsafe.Pointer, valuePtr int32) {
+	totalPower(context, valuePtr)
 }
 
 //export debug_print
@@ -160,7 +160,7 @@ func ontologyContract() {
 	_, _ = imports.Append("get_invoker", get_invoker, C.get_invoker)
 	_, _ = imports.Append("self_address", self_address, C.self_address)
 	_, _ = imports.Append("get_pre_caller", get_pre_caller, C.get_pre_caller)
-	_, _ = imports.Append("get_time", get_time, C.get_time)
+	_, _ = imports.Append("get_block_header", get_block_header, C.get_block_header)
 
 	_, _ = imports.Append("get_input_length", get_input_length, C.get_input_length)
 	_, _ = imports.Append("get_input", get_input, C.get_input)
@@ -205,7 +205,7 @@ func ontologyContract() {
 		{"get_invoker"},
 		{"self_address"},
 		{"get_pre_caller"},
-		{"get_time"},
+		{"get_block_header"},
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
 		{"destroy_contract"},
 		{"notify"},

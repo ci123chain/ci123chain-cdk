@@ -189,6 +189,11 @@ impl ContractResult<'_> {
     }
 }
 
+pub struct BlockHeader {
+    pub height: u64,
+    pub timestamp: u64,
+}
+
 #[derive(Debug)]
 pub enum Error {
     UnexpectedEOF,

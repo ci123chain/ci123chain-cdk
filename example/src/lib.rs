@@ -70,10 +70,11 @@ pub fn invoke() {
                 data: caller_address.to_string().as_bytes(),
             }));
         }
-        "get_time" => {
-            let time_stamp = deps.api.get_timestamp();
+        "get_block_header" => {
+            let block = deps.api.get_block_header();
             return_contract(Ok(Response {
-                data: time_stamp.to_string().as_bytes(),
+                data: format!("height: {}, timestamp: {}", block.height, block.timestamp)
+                    .as_bytes(),
             }));
         }
         "call_contract" => {

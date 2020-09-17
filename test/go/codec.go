@@ -4,8 +4,38 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"math/big"
 	"unicode/utf8"
 )
+
+type RustU128 [16]byte
+
+func NewRustU128(i *big.Int) *RustU128 {
+	ib := i.Bytes() // big-endian
+
+	size := len(ib)
+	if size > 16 {
+		panic("u128最大16字节") //链上处理
+	}
+
+	// little-endian
+	for i := 0; i < size/2; i++ {
+		ib[i], ib[size-1-i] = ib[size-1-i], ib[i]
+	}
+
+	// 补全
+	for i := 0; i+size < 16; i++ {
+		ib = append(ib, 0)
+	}
+
+	var u RustU128
+	copy(u[:], ib)
+	return &u
+}
+
+func (u128 *RustU128) Bytes() []byte {
+	return u128[:]
+}
 
 type Sink struct {
 	buf *bytes.Buffer
@@ -23,6 +53,10 @@ func (sink Sink) WriteU32(i uint32) {
 
 func (sink Sink) WriteU64(i uint64) {
 	sink.writeLittleEndian(i)
+}
+
+func (sink Sink) WriteU128(u *RustU128) {
+	sink.writeRawBytes(u[:])
 }
 
 func (sink Sink) WriteI32(i int32) {

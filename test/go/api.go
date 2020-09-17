@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 	"unsafe"
 
@@ -151,9 +152,15 @@ func getPreCaller(context unsafe.Pointer, callerPtr int32) {
 	copy(memory[callerPtr:callerPtr+AddressSize], contractAddress[:])
 }
 
-func getTime(_ unsafe.Pointer) int64 {
-	now := time.Now() //blockHeader.Time
-	return now.Unix()
+func getBlockHeader(context unsafe.Pointer, valuePtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	sink := NewSink([]byte{})
+	sink.WriteU64(1000)                      // 高度
+	sink.WriteU64(uint64(time.Now().Unix())) // 区块头时间
+
+	copy(memory[valuePtr:valuePtr+8*2], sink.Bytes())
 }
 
 func notifyContract(context unsafe.Pointer, ptr, size int32) {
@@ -246,23 +253,28 @@ func getValidatorPower(context unsafe.Pointer, dataPtr, dataSize, valuePtr int32
 	}
 
 	//根据链上信息返回验证者的 delegate shares
-	value := make([]uint64, len(validators))
+	value := make([]*RustU128, len(validators))
 	for i := range value {
-		value[i] = uint64(i)
+		value[i] = NewRustU128(big.NewInt(int64(i) + 123456789))
 	}
 
 	sink := NewSink([]byte{})
 	for i := range value {
-		sink.WriteU64(value[i])
+		sink.WriteU128(value[i])
 	}
 
 	res := sink.Bytes()
 	copy(memory[valuePtr:int(valuePtr)+len(res)], res)
 }
 
-func totalPower(_ unsafe.Pointer) int64 {
+func totalPower(context unsafe.Pointer, valuePtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
 	//根据链上信息返回总权益
-	return 123456789
+	power := big.NewInt(123456789)
+	u128 := NewRustU128(power)
+	copy(memory[valuePtr:valuePtr+16], u128.Bytes())
 }
 
 func debugPrint(context unsafe.Pointer, msgPtr, msgSize int32) {
