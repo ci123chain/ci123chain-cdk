@@ -84,6 +84,13 @@ pub fn invoke() {
                 None => return_contract(Err("call contract error")),
             }
         }
+        "new_contract" => {
+            let codehash = "newcodehash".as_bytes();
+            let new_addr = deps.api.new_contract(codehash);
+            return_contract(Ok(Response{
+                data: new_addr.to_string().as_bytes(),
+            }));
+        }
         // "destroy_contract" => {
         //     deps.api.destroy_contract();
         //     return_contract(Ok(Response {

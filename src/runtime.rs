@@ -228,6 +228,13 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
+    pub fn new_contract(&self, codehash: &[u8]) -> Address {
+        let new_addr = Address::default();
+        let size = codehash.len();
+        unsafe { new_contract(new_addr.as_ptr() as *mut u8, codehash.as_ptr(), size) };
+        new_addr
+    }
+
     // // 销毁本合约
     // pub fn destroy_contract(&self) {
     //     unsafe { destroy_contract() }
@@ -288,6 +295,7 @@ extern "C" {
     fn get_pre_caller(caller_ptr: *mut u8);
     fn get_time() -> u64;
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
+    fn new_contract(new_addr_ptr: *mut u8, code_hash_ptr: *const u8, input_size: usize);
     // fn destroy_contract();
     fn panic_contract(data_ptr: *const u8, data_size: usize);
     fn get_validator_power(data_ptr: *const u8, data_size: usize, value_ptr: *mut u8);

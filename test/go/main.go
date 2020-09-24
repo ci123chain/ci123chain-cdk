@@ -18,6 +18,7 @@ package main
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
+// extern void new_contract(void*, int, int, int);
 // extern void destroy_contract(void*);
 // extern void panic_contract(void*, int, int);
 // extern void get_validator_power(void*, int, int, int);
@@ -103,6 +104,11 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
+//export new_contract
+func new_contract(context unsafe.Pointer, newContractPtr, codeHashPtr, codeHashSize int32) {
+	newContract(context, newContractPtr, codeHashPtr, codeHashSize)
+}
+
 //export destroy_contract
 func destroy_contract(context unsafe.Pointer) {
 	destroyContract(context)
@@ -167,6 +173,8 @@ func ontologyContract() {
 	_, _ = imports.Append("return_contract", return_contract, C.return_contract)
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
+    _, _ = imports.Append("new_contract", new_contract, C.new_contract)
+
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
 
@@ -197,6 +205,7 @@ func ontologyContract() {
 	sendAddr := NewAddress([]byte("user0000000000000000"))
 	callAddr := NewAddress([]byte("contract000000000000"))
 	params := [][]interface{}{
+		{"new_contract"},
 		{"write_db", "time", "机器"},
 		{"read_db", "time"},
 		{"delete_db", "time"},
