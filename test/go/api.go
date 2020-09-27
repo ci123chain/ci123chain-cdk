@@ -210,7 +210,7 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 	return token
 }
 
-func newContract(context unsafe.Pointer, newContractPtr, codeHashPtr, codeHashSize int32) {
+func newContract(context unsafe.Pointer, newContractPtr, codeHashPtr, codeHashSize, argsPtr, argsSize int32) {
     contractAddress := Address{}
     copy(contractAddress[:], "newaddr11222222222222")
 

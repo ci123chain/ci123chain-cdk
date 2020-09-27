@@ -86,7 +86,8 @@ pub fn invoke() {
         }
         "new_contract" => {
             let codehash = "newcodehash".as_bytes();
-            let new_addr = deps.api.new_contract(codehash);
+            let args = "initArgs".as_bytes();
+            let new_addr = deps.api.new_contract(codehash, args);
             return_contract(Ok(Response{
                 data: new_addr.to_string().as_bytes(),
             }));

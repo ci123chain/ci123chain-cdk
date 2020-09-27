@@ -18,7 +18,7 @@ package main
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
-// extern void new_contract(void*, int, int, int);
+// extern void new_contract(void*, int, int, int, int, int);
 // extern void destroy_contract(void*);
 // extern void panic_contract(void*, int, int);
 // extern void get_validator_power(void*, int, int, int);
@@ -105,8 +105,8 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 }
 
 //export new_contract
-func new_contract(context unsafe.Pointer, newContractPtr, codeHashPtr, codeHashSize int32) {
-	newContract(context, newContractPtr, codeHashPtr, codeHashSize)
+func new_contract(context unsafe.Pointer, newContractPtr, codeHashPtr, codeHashSize, argsPtr, argsSize int32) {
+	newContract(context, newContractPtr, codeHashPtr, codeHashSize, argsPtr, argsSize)
 }
 
 //export destroy_contract
