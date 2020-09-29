@@ -18,7 +18,9 @@ pub mod prelude {
     pub use core::convert::AsMut;
     pub use core::fmt::Write;
     pub use core::prelude::v1::*;
-    pub use serde::{Deserialize, Serialize};
+    pub use serde::de::{Error, Visitor};
+    pub use serde::{Deserialize, Deserializer, Serialize, Serializer};
     pub use std::cell::Cell;
+    pub use std::fmt;
     pub use std::panic;
 }

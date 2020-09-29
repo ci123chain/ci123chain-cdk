@@ -1,5 +1,5 @@
-use crate::codec::Sink;
-use crate::types::{Address, ContractResult, Response};
+use crate::codec::{Sink, Source};
+use crate::types::{Address, BlockHeader, ContractResult, Response};
 
 use crate::prelude::{panic, vec, Vec};
 
@@ -192,8 +192,21 @@ impl<'a> ExternalApi {
     }
 
     // 获取当前block header时间戳
-    pub fn get_timestamp(&self) -> u64 {
-        unsafe { get_time() }
+    //pub fn get_timestamp(&self) -> u64 {
+        //unsafe { get_time() }
+    //}
+
+    // 获取当前block header
+    pub fn get_block_header(&self) -> BlockHeader {
+        let mut block_bytes = [0u8; 8 * 2];
+        unsafe { get_block_header(block_bytes.as_mut_ptr() as *mut u8) };
+        let source = Source::new(&block_bytes);
+        let height = source.read_u64().unwrap();
+        let timestamp = source.read_u64().unwrap();
+        BlockHeader {
+            height: height,
+            timestamp: timestamp,
+        }
     }
 
     // 合约返回
@@ -242,13 +255,13 @@ impl<'a> ExternalApi {
     // }
 
     // 获取指定验证者的权益
-    pub fn get_validator_power(&self, validators: &[&Address]) -> Vec<u64> {
+    pub fn get_validator_power(&self, validators: &[&Address]) -> Vec<u128> {
         let mut sink = Sink::new(0);
         sink.write_usize(validators.len());
         for &validator in validators.iter() {
             sink.write_bytes(validator.as_bytes());
         }
-        let mut power = vec![0u64; validators.len()];
+        let mut power = vec![0u128; validators.len()];
         unsafe {
             get_validator_power(
                 sink.as_bytes().as_ptr(),
@@ -260,8 +273,14 @@ impl<'a> ExternalApi {
     }
 
     // 获取所有验证者的权益之和
-    pub fn total_power(&self) -> u64 {
-        unsafe { total_power() }
+    //pub fn total_power(&self) -> u64 {
+        //unsafe { total_power() }
+    //}
+    pub fn total_power(&self) -> u128 {
+        let mut power_bytes = [0u8; 16];
+        unsafe { total_power(power_bytes.as_mut_ptr() as *mut u8) };
+        let source = Source::new(&power_bytes);
+        source.read_u128().unwrap()
     }
 
     fn get_input(&self, token: i32) -> Vec<u8> {
@@ -294,13 +313,15 @@ extern "C" {
     fn get_invoker(invoker_ptr: *mut u8);
     fn self_address(contract_ptr: *mut u8);
     fn get_pre_caller(caller_ptr: *mut u8);
-    fn get_time() -> u64;
+    //fn get_time() -> u64;
+    fn get_block_header(value_ptr: *mut u8);
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
     fn new_contract(new_addr_ptr: *mut u8, code_hash_ptr: *const u8, input_size: usize, args_ptr: *const u8, args_size: usize);
     // fn destroy_contract();
     fn panic_contract(data_ptr: *const u8, data_size: usize);
     fn get_validator_power(data_ptr: *const u8, data_size: usize, value_ptr: *mut u8);
-    fn total_power() -> u64;
+    //fn total_power() -> u64;
+    fn total_power(value_ptr: *mut u8);
 
     #[cfg(debug_assertions)]
     pub fn debug_print(str_ptr: *const u8, str_size: usize);

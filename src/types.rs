@@ -2,43 +2,77 @@ use crate::codec::{from_hex_u8, Sink};
 use crate::runtime::panic;
 use crate::util::clone_into_array;
 
-use crate::prelude::{Deserialize, Serialize, String, Vec, Write};
+//use crate::prelude::{Deserialize, Serialize, String, Vec, Write};
+use crate::prelude::{
+    fmt, str, Deserialize, Deserializer, Error as SerdeError, Serialize, Serializer, String, Vec,
+    Visitor, Write,
+};
 
 pub const ADDR_SIZE: usize = 20;
 pub const ADDR_HEX_SIZE: usize = 42;
 
-#[derive(Clone, Copy, Default, Debug, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Copy, Default, Debug, PartialEq, Hash, Eq)]
 pub struct Address([u8; ADDR_SIZE]);
+
+
+impl Serialize for Address {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(self.to_string().as_str())
+    }
+}
+
+impl<'de> Deserialize<'de> for Address {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct AddressVisitor;
+
+        impl<'de> Visitor<'de> for AddressVisitor {
+            type Value = Address;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("Address")
+            }
+
+            fn visit_bytes<E>(self, value: &[u8]) -> Result<Address, E>
+            where
+                E: SerdeError,
+            {
+                match Address::from_bytes(value) {
+                    Ok(a) => Ok(a),
+                    Err(e) => Err(E::custom(e)),
+                }
+            }
+        }
+        deserializer.deserialize_bytes(AddressVisitor)
+    }
+}
 
 impl From<&str> for Address {
     fn from(s: &str) -> Self {
-        if s.len() != ADDR_HEX_SIZE {
-            panic("invalid address string length");
-        }
-        if &s[0..2] != "0x" {
-            panic("unexpected address string prefix")
-        }
-        let raw = s.as_bytes();
-        let mut addr = [0 as u8; ADDR_SIZE];
-        let (mut i, mut j) = (0, 3);
-        while j < s.len() {
-            let panic_err = "unexpected base64 char";
-            let (mut a, mut b) = (0, 0);
-            let res = from_hex_u8(raw[j - 1]);
-            match res {
-                Ok(c) => a = c,
-                Err(_) => panic(panic_err),
+        match Address::from_str(s) {
+            Ok(a) => a,
+            Err(e) => {
+                panic(e);
+                Address::default()
             }
-            let res = from_hex_u8(raw[j]);
-            match res {
-                Ok(c) => b = c,
-                Err(_) => panic(panic_err),
-            }
-            addr[i] = (a << 4) | b;
-            i += 1;
-            j += 2;
         }
-        Self::new(&addr).unwrap()
+    }
+}
+
+impl From<&[u8]> for Address {
+    fn from(b: &[u8]) -> Self {
+        match Address::from_bytes(b) {
+            Ok(a) => a,
+            Err(e) => {
+                panic(e);
+                Address::default()
+            }
+        }
     }
 }
 
@@ -74,6 +108,39 @@ impl Address {
         } else {
             Some(Address(clone_into_array(addr)))
         }
+    }
+
+    pub(crate) fn from_bytes(raw: &[u8]) -> Result<Address, &str> {
+        if raw.len() != ADDR_HEX_SIZE {
+            return Err("unexpected address string length");
+        }
+        if &raw[0..2] != &[48, 120] {
+            return Err("unexpected address string prefix");
+        }
+        let mut addr = [0 as u8; ADDR_SIZE];
+        let (mut i, mut j) = (0, 3);
+        while j < raw.len() {
+            let e = "unexpected hex encoding char";
+            let (a, b);
+            let res = from_hex_u8(raw[j - 1]);
+            match res {
+                Ok(c) => a = c,
+                Err(_) => return Err(e),
+            }
+            let res = from_hex_u8(raw[j]);
+            match res {
+                Ok(c) => b = c,
+                Err(_) => return Err(e),
+            }
+            addr[i] = (a << 4) | b;
+            i += 1;
+            j += 2;
+        }
+        Ok(Self::new(&addr).unwrap())
+    }
+
+    pub fn from_str(s: &str) -> Result<Address, &str> {
+        Address::from_bytes(s.as_bytes())
     }
 
     pub fn len() -> usize {
@@ -122,6 +189,11 @@ impl ContractResult<'_> {
             }
         }
     }
+}
+
+pub struct BlockHeader {
+    pub height: u64,
+    pub timestamp: u64,
 }
 
 #[derive(Debug)]
