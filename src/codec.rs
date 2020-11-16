@@ -14,7 +14,7 @@ impl Sink {
         }
     }
 
-    pub fn write_byte(&mut self, b: u8) {
+    pub(crate) fn write_byte(&mut self, b: u8) {
         self.buf.push(b)
     }
 
@@ -31,22 +31,22 @@ impl Sink {
         self.write_raw_bytes(data);
     }
 
+    pub(crate) fn write_usize(&mut self, val: usize) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
     pub fn write_u32(&mut self, val: u32) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
 
-    pub fn write_u64(&mut self, val: u64) {
-        let buf = val.to_le_bytes();
-        self.write_raw_bytes(&buf);
-    }
-
-    pub fn write_usize(&mut self, val: usize) {
-        let buf = val.to_le_bytes();
-        self.write_raw_bytes(&buf);
-    }
-
     pub fn write_i32(&mut self, val: i32) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
+    pub fn write_u64(&mut self, val: u64) {
         let buf = val.to_le_bytes();
         self.write_raw_bytes(&buf);
     }
@@ -112,7 +112,11 @@ impl<'a> Source<'a> {
         self.pos.get() >= self.size
     }
 
-    pub fn read_byte(&self) -> Result<u8, Error> {
+    pub fn read<T: Decoder<'a>>(&self) -> Result<T, Error> {
+        T::decode(self)
+    }
+
+    pub(crate) fn read_byte(&self) -> Result<u8, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 1;
         if old_pos >= self.size {
@@ -122,19 +126,23 @@ impl<'a> Source<'a> {
         Ok(self.buf[old_pos])
     }
 
-    pub fn read_bool(&self) -> Result<bool, Error> {
+    pub(crate) fn read_bool(&self) -> Result<bool, Error> {
         if self.read_byte()? == 0 {
             return Ok(false);
         }
         Ok(true)
     }
 
-    pub fn read_bytes(&self) -> Result<&[u8], Error> {
+    pub(crate) fn read_bytes(&self) -> Result<&'a [u8], Error> {
         let len = self.read_usize()?;
         self.read_raw_bytes(len)
     }
 
-    pub fn read_u32(&self) -> Result<u32, Error> {
+    pub(crate) fn read_usize(&self) -> Result<usize, Error> {
+        Ok(self.read_u32()? as usize)
+    }
+
+    pub(crate) fn read_u32(&self) -> Result<u32, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 4;
         if new_pos > self.size {
@@ -146,23 +154,7 @@ impl<'a> Source<'a> {
         )))
     }
 
-    pub fn read_u64(&self) -> Result<u64, Error> {
-        let old_pos = self.pos.get();
-        let new_pos = old_pos + 8;
-        if new_pos > self.size {
-            return Err(Error::UnexpectedEOF);
-        }
-        self.pos.set(new_pos);
-        Ok(u64::from_le_bytes(clone_into_array(
-            &self.buf[old_pos..new_pos],
-        )))
-    }
-
-    pub fn read_usize(&self) -> Result<usize, Error> {
-        Ok(self.read_u32()? as usize)
-    }
-
-    pub fn read_i32(&self) -> Result<i32, Error> {
+    pub(crate) fn read_i32(&self) -> Result<i32, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 4;
         if new_pos > self.size {
@@ -174,7 +166,19 @@ impl<'a> Source<'a> {
         )))
     }
 
-    pub fn read_i64(&self) -> Result<i64, Error> {
+    pub(crate) fn read_u64(&self) -> Result<u64, Error> {
+        let old_pos = self.pos.get();
+        let new_pos = old_pos + 8;
+        if new_pos > self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos.set(new_pos);
+        Ok(u64::from_le_bytes(clone_into_array(
+            &self.buf[old_pos..new_pos],
+        )))
+    }
+
+    pub(crate) fn read_i64(&self) -> Result<i64, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 8;
         if new_pos > self.size {
@@ -186,7 +190,7 @@ impl<'a> Source<'a> {
         )))
     }
 
-    pub fn read_u128(&self) -> Result<u128, Error> {
+    pub(crate) fn read_u128(&self) -> Result<u128, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 16;
         if new_pos > self.size {
@@ -198,7 +202,7 @@ impl<'a> Source<'a> {
         )))
     }
 
-    pub fn read_i128(&self) -> Result<i128, Error> {
+    pub(crate) fn read_i128(&self) -> Result<i128, Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + 16;
         if new_pos > self.size {
@@ -215,7 +219,7 @@ impl<'a> Source<'a> {
     //     Ok(Address::new(&clone_into_array(bytes)))
     // }
 
-    pub fn read_str(&self) -> Result<&str, Error> {
+    pub(crate) fn read_str(&self) -> Result<&'a str, Error> {
         let bytes = self.read_bytes()?;
         match str::from_utf8(bytes) {
             Ok(s) => Ok(s),
@@ -223,7 +227,12 @@ impl<'a> Source<'a> {
         }
     }
 
-    pub(crate) fn read_raw_bytes(&self, len: usize) -> Result<&[u8], Error> {
+    pub(crate) fn read_string(&self) -> Result<String, Error> {
+        let s = self.read_str()?;
+        Ok(s.to_string())
+    }
+
+    pub(crate) fn read_raw_bytes(&self, len: usize) -> Result<&'a [u8], Error> {
         let old_pos = self.pos.get();
         let new_pos = old_pos + len;
         if new_pos > self.size {
@@ -233,6 +242,56 @@ impl<'a> Source<'a> {
         Ok(&self.buf[old_pos..new_pos])
     }
 }
+
+pub trait Decoder<'a>: Sized {
+    fn decode(source: &Source<'a>) -> Result<Self, Error>;
+}
+
+macro_rules! impl_decoder_for {
+    ($t:ty, $f:ident) => {
+        impl<'a> Decoder<'a> for $t {
+            fn decode(source: &Source<'a>) -> Result<Self, Error> {
+                let result = source.$f()?;
+                Ok(result)
+            }
+        }
+    };
+}
+
+impl_decoder_for!(bool, read_bool);
+impl_decoder_for!(&'a [u8], read_bytes);
+impl_decoder_for!(&'a str, read_str);
+impl_decoder_for!(String, read_string);
+impl_decoder_for!(u32, read_u32);
+impl_decoder_for!(i32, read_i32);
+impl_decoder_for!(u64, read_u64);
+impl_decoder_for!(i64, read_i64);
+impl_decoder_for!(u128, read_u128);
+impl_decoder_for!(i128, read_i128);
+
+macro_rules! tuple_impls {
+    ( $( $name:ident )+ ) => {
+        impl <'a, $($name: Decoder<'a>),+> Decoder<'a> for ($($name,)+)
+        {
+            fn decode(source: &Source<'a>) -> Result<Self, Error> {
+                Ok(($(source.read::<$name>()?,)*))
+            }
+        }
+    };
+}
+
+tuple_impls! { A }
+tuple_impls! { A B }
+tuple_impls! { A B C }
+tuple_impls! { A B C D }
+tuple_impls! { A B C D E }
+tuple_impls! { A B C D E F }
+tuple_impls! { A B C D E F G }
+tuple_impls! { A B C D E F G H }
+tuple_impls! { A B C D E F G H I }
+tuple_impls! { A B C D E F G H I J }
+tuple_impls! { A B C D E F G H I J K }
+tuple_impls! { A B C D E F G H I J K L }
 
 pub(crate) fn from_hex_u8(c: u8) -> Result<u8, Error> {
     if '0' as u8 <= c && c <= '9' as u8 {
