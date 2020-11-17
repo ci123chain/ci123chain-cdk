@@ -14,10 +14,6 @@ impl Sink {
         }
     }
 
-    pub(crate) fn write_byte(&mut self, b: u8) {
-        self.buf.push(b)
-    }
-
     pub fn write_bool(&mut self, b: bool) {
         if b {
             self.write_byte(1)
@@ -29,11 +25,6 @@ impl Sink {
     pub fn write_bytes(&mut self, data: &[u8]) {
         self.write_usize(data.len());
         self.write_raw_bytes(data);
-    }
-
-    pub(crate) fn write_usize(&mut self, val: usize) {
-        let buf = val.to_le_bytes();
-        self.write_raw_bytes(&buf);
     }
 
     pub fn write_u32(&mut self, val: u32) {
@@ -73,6 +64,15 @@ impl Sink {
 
     pub fn write_str(&mut self, string: &str) {
         self.write_bytes(string.as_bytes());
+    }
+
+    pub(crate) fn write_usize(&mut self, val: usize) {
+        let buf = val.to_le_bytes();
+        self.write_raw_bytes(&buf);
+    }
+
+    pub(crate) fn write_byte(&mut self, b: u8) {
+        self.buf.push(b)
     }
 
     pub(crate) fn write_raw_bytes(&mut self, data: &[u8]) {
@@ -116,16 +116,6 @@ impl<'a> Source<'a> {
         T::decode(self)
     }
 
-    pub(crate) fn read_byte(&self) -> Result<u8, Error> {
-        let old_pos = self.pos.get();
-        let new_pos = old_pos + 1;
-        if old_pos >= self.size {
-            return Err(Error::UnexpectedEOF);
-        }
-        self.pos.set(new_pos);
-        Ok(self.buf[old_pos])
-    }
-
     pub(crate) fn read_bool(&self) -> Result<bool, Error> {
         if self.read_byte()? == 0 {
             return Ok(false);
@@ -136,10 +126,6 @@ impl<'a> Source<'a> {
     pub(crate) fn read_bytes(&self) -> Result<&'a [u8], Error> {
         let len = self.read_usize()?;
         self.read_raw_bytes(len)
-    }
-
-    pub(crate) fn read_usize(&self) -> Result<usize, Error> {
-        Ok(self.read_u32()? as usize)
     }
 
     pub(crate) fn read_u32(&self) -> Result<u32, Error> {
@@ -230,6 +216,21 @@ impl<'a> Source<'a> {
     pub(crate) fn read_string(&self) -> Result<String, Error> {
         let s = self.read_str()?;
         Ok(s.to_string())
+    }
+
+    // in rust WASM, usize will be regarded as u32
+    pub(crate) fn read_usize(&self) -> Result<usize, Error> {
+        Ok(self.read_u32()? as usize)
+    }
+
+    pub(crate) fn read_byte(&self) -> Result<u8, Error> {
+        let old_pos = self.pos.get();
+        let new_pos = old_pos + 1;
+        if old_pos >= self.size {
+            return Err(Error::UnexpectedEOF);
+        }
+        self.pos.set(new_pos);
+        Ok(self.buf[old_pos])
     }
 
     pub(crate) fn read_raw_bytes(&self, len: usize) -> Result<&'a [u8], Error> {

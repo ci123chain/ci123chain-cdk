@@ -146,7 +146,7 @@ func getBytes() []byte {
 	return res
 }
 
-func ontologyContract() {
+func shardChainContract() {
 	imports, err := wasm.NewImports().Namespace("env").Append("send", send, C.send)
 	if err != nil {
 		panic(err)
@@ -223,7 +223,7 @@ func ontologyContract() {
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					fmt.Println(err)
+					fmt.Printf("catch %v\n", err)
 				}
 			}()
 
@@ -274,5 +274,5 @@ func serialize(raw []interface{}) (res []byte) {
 }
 
 func main() {
-	ontologyContract()
+	shardChainContract()
 }
