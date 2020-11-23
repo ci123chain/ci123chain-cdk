@@ -5,29 +5,29 @@ use cdk::math;
 use cdk::runtime;
 use cdk::runtime::ItemValue::Str as IString;
 use cdk::types::{Address, ContractResult};
-use cdk_proc::attr_with_args;
+use cdk_proc::external_fn;
 
 use c123chain_cdk::debug;
 
-#[attr_with_args]
+#[external_fn]
 fn read_db(key: &str) -> ContractResult {
     ContractResult::Ok(read(key).into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn write_db(key: &str, value: &str) -> ContractResult {
     write(key, value);
     debug!("{}: {}", key, value);
     ContractResult::Ok("success".to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn delete_db(key: &str) -> ContractResult {
     delete(key);
     ContractResult::Ok("success".to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn send(addr_str: &str, amount: u64) -> ContractResult {
     ContractResult::Ok(
         api()
@@ -37,31 +37,31 @@ fn send(addr_str: &str, amount: u64) -> ContractResult {
     )
 }
 
-#[attr_with_args]
+#[external_fn]
 fn get_creator() -> ContractResult {
     let creator = api().get_creator();
     ContractResult::Ok(creator.to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn get_invoker() -> ContractResult {
     let invoker = api().get_invoker();
     ContractResult::Ok(invoker.to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn self_address() -> ContractResult {
     let contract_address = api().self_address();
     ContractResult::Ok(contract_address.to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn get_pre_caller() -> ContractResult {
     let caller_address = api().get_pre_caller();
     ContractResult::Ok(caller_address.to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn get_block_header() -> ContractResult {
     let block = api().get_block_header();
     ContractResult::Ok(
@@ -69,7 +69,7 @@ fn get_block_header() -> ContractResult {
     )
 }
 
-#[attr_with_args]
+#[external_fn]
 fn call_contract(addr_str: &str, ret_input: &[u8]) -> ContractResult {
     match api().call_contract(&addr_str.into(), ret_input) {
         Some(res) => ContractResult::Ok(res),
@@ -77,18 +77,18 @@ fn call_contract(addr_str: &str, ret_input: &[u8]) -> ContractResult {
     }
 }
 
-#[attr_with_args]
+#[external_fn]
 fn mul(x: u128, y: u128) -> ContractResult {
     ContractResult::Ok(math::safe_mul(x, y).to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn notify() -> ContractResult {
     event("event type", "event msg");
     ContractResult::Ok("success".to_string().into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn get_validator_power() -> ContractResult {
     let validators = [
         &Address::default(),
@@ -99,7 +99,7 @@ fn get_validator_power() -> ContractResult {
     ContractResult::Ok(format!("{:?}", power).into_bytes())
 }
 
-#[attr_with_args]
+#[external_fn]
 fn total_power() -> ContractResult {
     let total_power = api().total_power();
     ContractResult::Ok(total_power.to_string().into_bytes())

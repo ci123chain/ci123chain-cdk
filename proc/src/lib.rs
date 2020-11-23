@@ -40,7 +40,7 @@ impl ToString for CompileError {
 
 #[proc_macro_error]
 #[proc_macro_attribute]
-pub fn attr_with_args(_: TokenStream, input: TokenStream) -> TokenStream {
+pub fn external_fn(_: TokenStream, input: TokenStream) -> TokenStream {
     let mut f: syn::ItemFn = parse_macro_input!(input);
 
     let invoke_fn_name = f.sig.ident.to_string();
