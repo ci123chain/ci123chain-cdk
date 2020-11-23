@@ -3,12 +3,16 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::{format_ident, quote, ToTokens, TokenStreamExt};
+use serde::Serialize;
+use serde_json::to_string;
 use std::collections::HashSet;
+use std::fs;
 use syn::parse_macro_input;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Serialize)]
 struct ContractFnSig {
-    fn_name: String,
+    invoke_name: String,
+    export_name: String,
     input_type: Vec<String>,
     output_type: Option<String>,
 }
@@ -54,15 +58,16 @@ pub fn external_fn(_: TokenStream, input: TokenStream) -> TokenStream {
 
     unsafe {
         CONTRACT_DOC.push(ContractFnSig {
-            fn_name: export_fn_name.clone(),
-            input_type: fn_args.iter().map(|arg| arg.r#type.ty.clone()).collect(),
+            invoke_name: invoke_fn_name.clone(),
+            export_name: export_fn_name.clone(),
+            input_type: fn_args.iter().map(|arg| arg.r#type.name.clone()).collect(),
             output_type: if let Some(param_type) = &fn_return_type {
                 Some(param_type.ty.clone())
             } else {
                 None
             },
         });
-        // println!("{:?}", CONTRACT_DOC);
+        let _ = fs::write("./target/doc.json", to_string(&CONTRACT_DOC).unwrap());
     }
 
     let mut token = generate_invoke_fn(export_fn_name, invoke_fn_name, fn_args, fn_return_type);
@@ -143,6 +148,7 @@ struct FnArg {
 #[derive(Debug, Clone)]
 struct ParamType {
     ty: String,
+    name: String,
     token: TokenStream2,
 }
 
@@ -191,15 +197,17 @@ fn parse_arg_type(arg_tp: &syn::Type) -> ParamType {
         ($i: ident) => {
             ParamType {
                 ty: String::from(stringify!($i)),
+                name: String::from(stringify!($i)),
                 token: quote! { $i },
             }
         };
     }
 
     macro_rules! gt2 {
-        ($i: ident, $token: ty) => {
+        ($i: ident, $n: expr, $token: ty) => {
             ParamType {
                 ty: String::from(stringify!($i)),
+                name: $n.to_string(),
                 token: quote! { $token },
             }
         };
@@ -215,8 +223,8 @@ fn parse_arg_type(arg_tp: &syn::Type) -> ParamType {
         gt1!(i128),
         gt1!(String),
     ];
-    let st_str = gt2!(str, &str);
-    let st_slice_u8 = gt2!(u8, &[u8]);
+    let st_str = gt2!(str, "String", &str);
+    let st_slice_u8 = gt2!(u8, "[u8]", &[u8]);
 
     match arg_tp {
         syn::Type::Path(tp) => {
@@ -258,6 +266,7 @@ fn parse_arg_type(arg_tp: &syn::Type) -> ParamType {
 fn parse_return_type(return_tp: &syn::Type) -> ParamType {
     let param_type_result = ParamType {
         ty: "ContractResult".to_string(),
+        name: "ContractResult".to_string(),
         token: quote! {},
     };
 
