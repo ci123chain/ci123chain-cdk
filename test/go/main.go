@@ -26,6 +26,7 @@ package main
 // extern void debug_print(void*, int, int);
 import "C"
 import (
+	"encoding/hex"
 	"fmt"
 	"unicode/utf8"
 	"unsafe"
@@ -188,12 +189,6 @@ func shardChainContract() {
 	}
 	defer instance.Close()
 
-	invoke, exist := instance.Exports["invoke"]
-	if !exist {
-		fmt.Println(exist)
-		return
-	}
-
 	sendAddr := NewAddress([]byte("user0000000000000000"))
 	callAddr := NewAddress([]byte("contract000000000000"))
 	params := [][]interface{}{
@@ -219,11 +214,17 @@ func shardChainContract() {
 
 	for _, param := range params {
 		fmt.Printf("\n==============================\ncall %s\n", param[0])
-		inputData[InputDataTypeParam] = serialize(param)
+		invoke, exist := instance.Exports["x"+hex.EncodeToString([]byte(param[0].(string)))]
+		if !exist {
+			fmt.Printf("can not find method: %s\n", param[0])
+			continue
+		}
+
+		inputData[InputDataTypeParam] = serialize(param[1:])
 		func() {
 			defer func() {
 				if err := recover(); err != nil {
-					fmt.Printf("catch %v\n", err)
+					fmt.Printf("catch: %v\n", err)
 				}
 			}()
 

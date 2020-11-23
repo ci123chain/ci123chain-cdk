@@ -9,7 +9,8 @@ crate-type = ["cdylib"]
 path = "src/lib.rs"
 
 [dependencies]
-c123chain-cdk = {path="../"}
+c123chain-cdk = { path = "../" }
+c123chain-cdk-proc = { path = "../proc/" }
 
 [profile.release]
 opt-level = "s"

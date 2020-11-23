@@ -293,15 +293,3 @@ tuple_impls! { A B C D E F G H I }
 tuple_impls! { A B C D E F G H I J }
 tuple_impls! { A B C D E F G H I J K }
 tuple_impls! { A B C D E F G H I J K L }
-
-pub(crate) fn from_hex_u8(c: u8) -> Result<u8, Error> {
-    if '0' as u8 <= c && c <= '9' as u8 {
-        Ok(c - '0' as u8)
-    } else if 'a' as u8 <= c && c <= 'f' as u8 {
-        Ok(c - 'a' as u8 + 10)
-    } else if 'A' as u8 <= c && c <= 'F' as u8 {
-        Ok(c - 'A' as u8 + 10)
-    } else {
-        Err(Error::IrregularData)
-    }
-}

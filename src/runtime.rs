@@ -1,5 +1,5 @@
 use crate::codec::{Sink, Source};
-use crate::types::{Address, BlockHeader, ContractResult, Response};
+use crate::types::{Address, BlockHeader, ContractResult};
 
 use crate::prelude::{panic, vec, Vec};
 
@@ -205,17 +205,9 @@ impl<'a> ExternalApi {
     }
 
     // 合约返回
-    pub fn ret(&self, result: Result<Response, &'a str>) {
-        match result {
-            Ok(response) => {
-                let output = ContractResult::Ok(response).to_vec();
-                unsafe { return_contract(output.as_ptr(), output.len()) };
-            }
-            Err(err) => {
-                let output = ContractResult::Err(err).to_vec();
-                unsafe { return_contract(output.as_ptr(), output.len()) };
-            }
-        }
+    pub fn ret(&self, result: ContractResult) {
+        let output = result.to_vec();
+        unsafe { return_contract(output.as_ptr(), output.len()) };
     }
 
     // 事件通知
@@ -313,7 +305,7 @@ macro_rules! debug {
     ($($arg:tt)*) => {
         #[cfg(debug_assertions)]
         {
-            use crate::runtime::debug_print;
+            use c123chain_cdk::runtime::debug_print;
             let s = format!($($arg)*);
             unsafe { debug_print(s.as_ptr(), s.len()) };
         }

@@ -12,6 +12,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wee_alloc = "0.4.5"
 serde = { version = "1.0.115", features = ["derive"] }
+hex = { path = "./hex/" }
 
 [profile.release]
 opt-level = "s"

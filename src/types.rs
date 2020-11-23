@@ -1,10 +1,11 @@
-use crate::codec::{from_hex_u8, Sink};
+use crate::codec::Sink;
 use crate::runtime::panic;
 use crate::util::clone_into_array;
+use hex;
 
 use crate::prelude::{
     fmt, str, Deserialize, Deserializer, Error as SerdeError, Serialize, Serializer, String, Vec,
-    Visitor, Write,
+    Visitor,
 };
 
 pub const ADDR_SIZE: usize = 20;
@@ -76,12 +77,7 @@ impl From<&[u8]> for Address {
 
 impl ToString for Address {
     fn to_string(&self) -> String {
-        let mut s = String::with_capacity(self.0.len() * 2 + 2);
-        s += "0x";
-        for v in self.0.iter() {
-            write!(s, "{:02x}", *v).unwrap();
-        }
-        s
+        format!("{}{}", "0x", hex::encode(&self.0))
     }
 }
 
@@ -119,25 +115,7 @@ impl Address {
         if &raw[0..2] != &[48, 120] {
             return Err("unexpected address string prefix");
         }
-        let mut addr = [0 as u8; ADDR_SIZE];
-        let (mut i, mut j) = (0, 3);
-        while j < raw.len() {
-            let e = "unexpected hex encoding char";
-            let (a, b);
-            let res = from_hex_u8(raw[j - 1]);
-            match res {
-                Ok(c) => a = c,
-                Err(_) => return Err(e),
-            }
-            let res = from_hex_u8(raw[j]);
-            match res {
-                Ok(c) => b = c,
-                Err(_) => return Err(e),
-            }
-            addr[i] = (a << 4) | b;
-            i += 1;
-            j += 2;
-        }
+        let addr = hex::decode(&raw[2..])?;
         Ok(Self::new(&addr).unwrap())
     }
 
@@ -159,17 +137,12 @@ impl Address {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct Response<'a> {
-    pub data: &'a [u8],
+pub enum ContractResult {
+    Ok(Vec<u8>),
+    Err(String),
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum ContractResult<'a> {
-    Ok(Response<'a>),
-    Err(&'a str),
-}
-
-impl ContractResult<'_> {
+impl ContractResult {
     pub(crate) fn to_vec(&self) -> Vec<u8> {
         // [ok or error, size of data, data]
         // [bool,        usize,        bytes]
@@ -177,7 +150,7 @@ impl ContractResult<'_> {
         match self {
             ContractResult::Ok(resp) => {
                 sink.write_bool(true);
-                sink.write_bytes(&resp.data);
+                sink.write_bytes(&resp);
                 sink.into()
             }
             ContractResult::Err(err) => {
