@@ -217,6 +217,18 @@ func callContract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) in
 	return token
 }
 
+func newContract(context unsafe.Pointer, codeHashPtr, codeHashSize, argsPtr, argsSize, newContractPtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	codeHash := memory[codeHashPtr : codeHashPtr+codeHashSize]
+	args := memory[argsPtr : argsPtr+argsSize]
+
+	fmt.Printf("codeHash len: %d, args len: %d\n", len(codeHash), len(args))
+
+	copy(memory[newContractPtr:newContractPtr+AddressSize], "caller11222222222223")
+}
+
 func destroyContract(_ unsafe.Pointer) {
 	fmt.Println("destroy contract")
 }

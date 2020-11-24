@@ -78,6 +78,12 @@ fn call_contract(addr_str: &str, ret_input: &[u8]) -> ContractResult {
 }
 
 #[external_fn]
+fn new_contract(code_hash: &[u8], input: &[u8]) -> ContractResult {
+    let new_addr = api().new_contract(code_hash, input);
+    ContractResult::Ok(new_addr.to_string().into_bytes())
+}
+
+#[external_fn]
 fn mul(x: u128, y: u128) -> ContractResult {
     ContractResult::Ok(math::safe_mul(x, y).to_string().into_bytes())
 }

@@ -228,10 +228,22 @@ impl<'a> ExternalApi {
         Some(self.get_input(token))
     }
 
-    // // 销毁本合约
-    // pub fn destroy_contract(&self) {
-    //     unsafe { destroy_contract() }
-    // }
+    // 实例化合约
+    pub fn new_contract(&self, code_hash: &[u8], args: &[u8]) -> Address {
+        let new_addr = Address::default();
+
+        unsafe {
+            new_contract(
+                code_hash.as_ptr(),
+                code_hash.len(),
+                args.as_ptr(),
+                args.len(),
+                new_addr.as_ptr() as *mut u8,
+            )
+        };
+
+        new_addr
+    }
 
     // 获取指定验证者的权益
     pub fn get_validator_power(&self, validators: &[&Address]) -> Vec<u128> {
@@ -291,7 +303,13 @@ extern "C" {
     fn get_pre_caller(caller_ptr: *mut u8);
     fn get_block_header(value_ptr: *mut u8);
     fn call_contract(addr_ptr: *const u8, input_ptr: *const u8, input_size: usize) -> i32;
-    // fn destroy_contract();
+    fn new_contract(
+        code_hash_ptr: *const u8,
+        code_hash_size: usize,
+        args_ptr: *const u8,
+        args_size: usize,
+        new_addr_ptr: *mut u8,
+    );
     fn panic_contract(data_ptr: *const u8, data_size: usize);
     fn get_validator_power(data_ptr: *const u8, data_size: usize, value_ptr: *mut u8);
     fn total_power(value_ptr: *mut u8);

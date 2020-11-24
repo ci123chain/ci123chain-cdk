@@ -18,6 +18,7 @@ package main
 // extern void notify_contract(void*, int, int);
 // extern void return_contract(void*, int, int);
 // extern int call_contract(void*, int, int, int);
+// extern void new_contract(void*, int, int, int, int, int);
 // extern void destroy_contract(void*);
 // extern void panic_contract(void*, int, int);
 // extern void get_validator_power(void*, int, int, int);
@@ -104,6 +105,11 @@ func call_contract(context unsafe.Pointer, addrPtr, inputPtr, inputSize int32) i
 	return callContract(context, addrPtr, inputPtr, inputSize)
 }
 
+//export new_contract
+func new_contract(context unsafe.Pointer, codeHashPtr, codeHashSize, argsPtr, argsSize, newContractPtr int32) {
+	newContract(context, codeHashPtr, codeHashSize, argsPtr, argsSize, newContractPtr)
+}
+
 //export destroy_contract
 func destroy_contract(context unsafe.Pointer) {
 	destroyContract(context)
@@ -168,6 +174,7 @@ func shardChainContract() {
 	_, _ = imports.Append("return_contract", return_contract, C.return_contract)
 	_, _ = imports.Append("notify_contract", notify_contract, C.notify_contract)
 	_, _ = imports.Append("call_contract", call_contract, C.call_contract)
+	_, _ = imports.Append("new_contract", new_contract, C.new_contract)
 	_, _ = imports.Append("destroy_contract", destroy_contract, C.destroy_contract)
 	_, _ = imports.Append("panic_contract", panic_contract, C.panic_contract)
 
@@ -202,6 +209,7 @@ func shardChainContract() {
 		{"get_pre_caller"},
 		{"get_block_header"},
 		{"call_contract", callAddr.ToString(), []byte{1, 2, 3}},
+		{"new_contract", []byte("code hash"), []byte("input")},
 		{"destroy_contract"},
 		{"notify"},
 		{"get_validator_power"},
