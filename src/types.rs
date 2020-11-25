@@ -65,13 +65,7 @@ impl From<&str> for Address {
 
 impl From<String> for Address {
     fn from(s: String) -> Self {
-        match Address::from_str(s.as_str()) {
-            Ok(a) => a,
-            Err(e) => {
-                panic(e);
-                Address::default()
-            }
-        }
+        s.as_str().into()
     }
 }
 
