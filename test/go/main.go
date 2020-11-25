@@ -23,6 +23,7 @@ package main
 // extern void panic_contract(void*, int, int);
 // extern void get_validator_power(void*, int, int, int);
 // extern void total_power(void*, int);
+// extern void get_balance(void*, int, int);
 //
 // extern void debug_print(void*, int, int);
 import "C"
@@ -130,6 +131,11 @@ func total_power(context unsafe.Pointer, valuePtr int32) {
 	totalPower(context, valuePtr)
 }
 
+//export get_balance
+func get_balance(context unsafe.Pointer, addrPtr, balancePtr int32) {
+	getBalance(context, addrPtr, balancePtr)
+}
+
 //export debug_print
 func debug_print(context unsafe.Pointer, msgPtr, msgSize int32) {
 	debugPrint(context, msgPtr, msgSize)
@@ -180,6 +186,7 @@ func shardChainContract() {
 
 	_, _ = imports.Append("get_validator_power", get_validator_power, C.get_validator_power)
 	_, _ = imports.Append("total_power", total_power, C.total_power)
+	_, _ = imports.Append("get_balance", get_balance, C.get_balance)
 
 	_, _ = imports.Append("debug_print", debug_print, C.debug_print)
 
@@ -214,6 +221,7 @@ func shardChainContract() {
 		{"notify"},
 		{"get_validator_power"},
 		{"total_power"},
+		{"get_balance", sendAddr.ToString()},
 		{"mul", int64(1 << 60), int64(1 << 61), int64(1 << 62), int64(1<<63 - 1)}, //overflow
 		{"这是一个无效的方法"},
 		{"send", "a" + sendAddr.ToString()[1:], uint64(7)}, //panic用例

@@ -111,6 +111,12 @@ fn total_power() -> ContractResult {
     ContractResult::Ok(total_power.to_string().into_bytes())
 }
 
+#[external_fn]
+fn get_balance(addr: String) -> ContractResult {
+    let balance = api().get_balance(&addr.into());
+    ContractResult::Ok(balance.to_string().into_bytes())
+}
+
 fn api() -> runtime::ExternalApi {
     runtime::make_dependencies().api
 }

@@ -196,12 +196,9 @@ impl<'a> ExternalApi {
         let mut block_bytes = [0u8; 8 * 2];
         unsafe { get_block_header(block_bytes.as_mut_ptr() as *mut u8) };
         let source = Source::new(&block_bytes);
-        let height = source.read_u64().unwrap();
-        let timestamp = source.read_u64().unwrap();
-        BlockHeader {
-            height: height,
-            timestamp: timestamp,
-        }
+        let height = source.read().unwrap();
+        let timestamp = source.read().unwrap();
+        BlockHeader { height, timestamp }
     }
 
     // 合约返回
@@ -268,7 +265,15 @@ impl<'a> ExternalApi {
         let mut power_bytes = [0u8; 16];
         unsafe { total_power(power_bytes.as_mut_ptr() as *mut u8) };
         let source = Source::new(&power_bytes);
-        source.read_u128().unwrap()
+        source.read().unwrap()
+    }
+
+    // 获取地址余额
+    pub fn get_balance(&self, addr: &Address) -> u128 {
+        let mut balance = [0u8; 16];
+        unsafe { get_balance(addr.as_ptr() as *const u8, balance.as_mut_ptr() as *mut u8) };
+        let source = Source::new(&balance);
+        source.read().unwrap()
     }
 
     fn get_input(&self, token: i32) -> Vec<u8> {
@@ -313,6 +318,7 @@ extern "C" {
     fn panic_contract(data_ptr: *const u8, data_size: usize);
     fn get_validator_power(data_ptr: *const u8, data_size: usize, value_ptr: *mut u8);
     fn total_power(value_ptr: *mut u8);
+    fn get_balance(addr_ptr: *const u8, balance_ptr: *mut u8);
 
     #[cfg(debug_assertions)]
     pub fn debug_print(str_ptr: *const u8, str_size: usize);

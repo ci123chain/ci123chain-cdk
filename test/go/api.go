@@ -289,6 +289,19 @@ func totalPower(context unsafe.Pointer, valuePtr int32) {
 	copy(memory[valuePtr:valuePtr+16], u128.Bytes())
 }
 
+func getBalance(context unsafe.Pointer, addrPtr, balancePtr int32) {
+	var instanceContext = wasm.IntoInstanceContext(context)
+	var memory = instanceContext.Memory().Data()
+
+	var addr Address
+	copy(addr[:], memory[addrPtr:addrPtr+AddressSize])
+	fmt.Printf("get addr: %s\n", addr.ToString())
+
+	balance := big.NewInt(54321)
+	u128 := NewRustU128(balance)
+	copy(memory[balancePtr:balancePtr+16], u128.Bytes())
+}
+
 func debugPrint(context unsafe.Pointer, msgPtr, msgSize int32) {
 	var instanceContext = wasm.IntoInstanceContext(context)
 	var memory = instanceContext.Memory().Data()
