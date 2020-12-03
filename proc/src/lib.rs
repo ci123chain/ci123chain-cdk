@@ -221,9 +221,9 @@ fn parse_arg_type(arg_tp: &syn::Type) -> ParamType {
         gt1!(i64),
         gt1!(u128),
         gt1!(i128),
-        gt1!(String),
+        gt2!(String, "string", String),
     ];
-    let st_str = gt2!(str, "String", &str);
+    let st_str = gt2!(str, "string", &str);
     let st_slice_u8 = gt2!(u8, "[u8]", &[u8]);
 
     match arg_tp {
